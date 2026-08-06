@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radio Console - Independent Broadcast</title>
+    <style>
+        body {
+            background-color: #2b1d15;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('photo/background.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: #e0d0c0;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .console-cabinet {
+            background: linear-gradient(135deg, rgba(43, 29, 21, 0.92), rgba(24, 16, 12, 0.92));
+            border: 12px solid #080504;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 2px 8px rgba(255,255,255,0.05);
+            width: 780px;
+            text-align: center;
+            backdrop-filter: blur(2px);
+        }
+
+        .brand-plate {
+            font-size: 14px;
+            letter-spacing: 4px;
+            color: #8c7355;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        /* Vintage Radio Faceplate */
+        .radio-faceplate {
+            background: #111;
+            border: 4px solid #222;
+            border-radius: 8px;
+            padding: 20px 25px;
+            position: relative;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        /* Static Knobs */
+        .knob-assembly {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90px;
+        }
+
+        .knob {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #e0e0e0 30%, #888 65%, #333 100%);
+            border: 4px solid #111;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.8);
+            position: relative;
+            transform: rotate(-45deg);
+        }
+
+        .knob::after {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 20px;
+            background: #222;
+            border-radius: 2px;
+        }
+
+        .knob-label {
+            font-size: 11px;
+            color: #aaa;
+            letter-spacing: 2px;
+            margin-top: 8px;
+            font-weight: bold;
+        }
+
+        /* Dial Glass Display Window */
+        .dial-window {
+            flex-grow: 1;
+            background: #000;
+            border: 3px solid #2c2c2c;
+            border-radius: 4px;
+            padding: 12px 15px;
+            position: relative;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
+            text-align: left;
+        }
+
+        .scale-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #ccc;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .band-label {
+            color: #ff3333;
+            font-weight: bold;
+            width: 45px;
+        }
+
+        .scale-numbers {
+            display: flex;
+            justify-content: space-between;
+            flex-grow: 1;
+            padding: 0 10px;
+        }
+
+        .scale-unit {
+            color: #ff3333;
+            font-weight: bold;
+            font-size: 11px;
+            width: 40px;
+            text-align: right;
+        }
+
+        /* Visual Tuning Track & Pointer Bar */
+        .tuning-track-container {
+            position: relative;
+            height: 16px;
+            background: #181818;
+            border-radius: 3px;
+            margin: 6px 45px 10px 45px;
+            border: 1px solid #333;
+        }
+
+        .tuning-indicator-bar {
+            position: absolute;
+            top: 2px;
+            bottom: 2px;
+            width: 12px;
+            background: #e6e6e6;
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(255,255,255,0.8);
+            transform: translateX(-50%);
+            transition: left 0.05s ease-out;
+        }
+
+        .sub-footer-text {
+            text-align: center;
+            font-size: 11px;
+            color: #888;
+            letter-spacing: 2px;
+            border-top: 1px solid #222;
+            padding-top: 6px;
+            margin-top: 4px;
+        }
+
+        /* Screen Status Display */
+        .screen-display {
+            background: rgba(8, 12, 8, 0.9);
+            border: 2px solid #1a261a;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 15px;
+            color: #4cd137;
+            min-height: 32px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.8);
+            letter-spacing: 1px;
+            text-shadow: 0 0 6px rgba(76, 209, 55, 0.4);
+        }
+
+        /* Original Slide Controls Panel */
+        .controls-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: #8c7355;
+            cursor: pointer;
+            height: 8px;
+            background: #111;
+            border-radius: 4px;
+        }
+
+        .helper-text {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="console-cabinet">
+        <div class="brand-plate">Model IV - Custom High Fidelity Receiver</div>
+        
+        <!-- Radio Faceplate Assembly -->
+        <div class="radio-faceplate">
+            <!-- Left Volume Knob (Visual) -->
+            <div class="knob-assembly">
+                <div class="knob"></div>
+                <div class="knob-label">VOLUME</div>
+            </div>
+
+            <!-- Central Dial Glass Window -->
+            <div class="dial-window">
+                <!-- FM Scale Row -->
+                <div class="scale-row">
+                    <span class="band-label">FM</span>
+                    <div class="scale-numbers">
+                        <span>86</span><span>89</span><span>92</span><span>95</span><span>98</span><span>101</span><span>104</span><span>109</span>
+                    </div>
+                    <span class="scale-unit">MHz</span>
+                </div>
+
+                <!-- Sliding Indicator Track -->
+                <div class="tuning-track-container">
+                    <div id="tuningBar" class="tuning-indicator-bar" style="left: 0%;"></div>
+                </div>
+
+                <!-- AM Band Row (535 - 1605 kHz) -->
+                <div class="scale-row">
+                    <span class="band-label" style="color: #ffaa33;">AM</span>
+                    <div class="scale-numbers" style="color: #aaa;">
+                        <span>535</span><span>650</span><span>800</span><span>1000</span><span>1200</span><span>1400</span><span>1500</span><span>1605</span>
+                    </div>
+                    <span class="scale-unit" style="color: #ffaa33;">kHz</span>
+                </div>
+
+                <div class="sub-footer-text">AM/FM/SW 3 BAND RADIO MP3 MUSIC PLAYER</div>
+            </div>
+
+            <!-- Right Tuning Knob (Visual) -->
+            <div class="knob-assembly">
+                <div class="knob" style="transform: rotate(45deg);"></div>
+                <div class="knob-label">TUNING</div>
+            </div>
+        </div>
+        
+        <div class="screen-display" id="stationDisplay">
+            RECEIVER STATUS: STANDBY... SWEEP DIAL TO SCAN FREQUENCIES
+        </div>
+
+        <div class="controls-panel">
+            <input type="range" id="tuner" min="86" max="109" step="1" value="86">
+            <div class="helper-text">Frequency Slide Tuner</div>
+        </div>
+    </div>
+
+    <!-- All 24 Local WAV Audio Files -->
+    <audio id="track1" src="audio/mass effect.mp3" preload="auto" loop></audio>
+    <audio id="track2" src="audio/there.mp3" preload="auto" loop></audio>
+    <audio id="track3" src="audio/oticons.mp3" preload="auto" loop></audio>
+    <audio id="track4" src="audio/caprizant.mp3" preload="auto" loop></audio>
+    <audio id="track5" src="audio/arise.mp3" preload="auto" loop></audio>
+    <audio id="track6" src="audio/stubborness.mp3" preload="auto" loop></audio>
+    <audio id="track7" src="audio/the daunting.mp3" preload="auto" loop></audio>
+    <audio id="track8" src="audio/quaturo.mp3" preload="auto" loop></audio>
+    <audio id="track9" src="audio/melancoly in flat.mp3" preload="auto" loop></audio>
+    <audio id="track10" src="audio/next flight home.mp3" preload="auto" loop></audio>
+    <audio id="track11" src="audio/cinderella shoe.mp3" preload="auto" loop></audio>
+    <audio id="track12" src="audio/chase.mp3" preload="auto" loop></audio>
+    <audio id="track13" src="audio/bang.mp3" preload="auto" loop></audio>
+    <audio id="track14" src="audio/monster.mp3" preload="auto" loop></audio>
+    <audio id="track15" src="audio/Bliss.mp3" preload="auto" loop></audio>
+    <audio id="track16" src="audio/tangerine.mp3" preload="auto" loop></audio>
+    <audio id="track17" src="audio/across bourbon street.mp3" preload="auto" loop></audio>
+    <audio id="track18" src="audio/eveille.mp3" preload="auto" loop></audio>
+    <audio id="track19" src="audio/grave.mp3" preload="auto" loop></audio>
+    <audio id="track20" src="audio/always.mp3" preload="auto" loop></audio>
+    <audio id="track21" src="audio/dancer.mp3" preload="auto" loop></audio>
+    <audio id="track22" src="audio/push.mp3" preload="auto" loop></audio>
+    <audio id="track23" src="audio/resounding.mp3" preload="auto" loop></audio>
+    <audio id="track24" src="audio/twin sparks.mp3" preload="auto" loop></audio>
+    <audio id="track25" src="audio/pacis.mp3" preload="auto" loop></audio>
+
+
+    <script>
+        const tuner = document.getElementById('tuner');
+        const tuningBar = document.getElementById('tuningBar');
+        const stationDisplay = document.getElementById('stationDisplay');
+
+        const minFreq = 86;
+        const maxFreq = 109;
+
+        const stations = {
+            86: { title: "TRANSMISSION: Mass Effect", audio: document.getElementById('track1') },
+            87: { title: "TRANSMISSION: There", audio: document.getElementById('track2') },
+            88: { title: "TRANSMISSION: Oticons", audio: document.getElementById('track3') },
+            89: { title: "TRANSMISSION: Caprizant", audio: document.getElementById('track4') },
+            90: { title: "TRANSMISSION: Arise", audio: document.getElementById('track5') },
+            91: { title: "TRANSMISSION: Stubborness", audio: document.getElementById('track6') },
+            92: { title: "TRANSMISSION: The Daunting", audio: document.getElementById('track7') },
+            93: { title: "TRANSMISSION: Quaturo", audio: document.getElementById('track8') },
+            94: { title: "TRANSMISSION: Melancoly in Flat", audio: document.getElementById('track9') },
+            95: { title: "TRANSMISSION: Next Flight Home", audio: document.getElementById('track10') },
+            96: { title: "TRANSMISSION: Cinderella Shoe", audio: document.getElementById('track11') },
+            97: { title: "TRANSMISSION: Chase", audio: document.getElementById('track12') },
+            98: { title: "TRANSMISSION: Bang", audio: document.getElementById('track13') },
+            99: { title: "TRANSMISSION: Monster", audio: document.getElementById('track14') },
+            100: { title: "TRANSMISSION: Bliss", audio: document.getElementById('track15') },
+            101: { title: "TRANSMISSION: Tangerine", audio: document.getElementById('track16') },
+            102: { title: "TRANSMISSION: Across Bourbon Street", audio: document.getElementById('track17') },
+            103: { title: "TRANSMISSION: Eveille", audio: document.getElementById('track18') },
+            104: { title: "TRANSMISSION: Grave", audio: document.getElementById('track19') },
+            105: { title: "TRANSMISSION: Always", audio: document.getElementById('track20') },
+            106: { title: "TRANSMISSION: Dancer", audio: document.getElementById('track21') },
+            107: { title: "TRANSMISSION: Push", audio: document.getElementById('track22') },
+            108: { title: "TRANSMISSION: Resounding", audio: document.getElementById('track23') },
+	    109: { title: "TRANSMISSION: Twin Sparks", audio: document.getElementById('track24') },
+            110: { title: "TRANSMISSION: Pacis", audio: document.getElementById('track25') }
+        };
+
+        function stopAllAudio() {
+            for (let key in stations) {
+                let aud = stations[key].audio;
+                aud.pause();
+                aud.currentTime = 0;
+                aud.muted = true;
+            }
+        }
+
+        tuner.addEventListener('input', (e) => {
+            const freq = parseInt(e.target.value);
+            const percent = ((freq - minFreq) / (maxFreq - minFreq)) * 100;
+            
+            tuningBar.style.left = `${percent}%`;
+
+            const lockedStation = stations[freq];
+
+            stopAllAudio();
+
+            if (lockedStation) {
+                stationDisplay.innerHTML = `[ LOCKED ] > ${lockedStation.title} (${freq} MHz)`;
+                let aud = lockedStation.audio;
+                aud.currentTime = 0;
+                aud.muted = false;
+                aud.play().catch(() => {});
+            } else {
+                stationDisplay.innerHTML = `STATIC... [ FREQ: ${freq} MHz ]`;
+            }
+        });
+    </script>
+</body>
+</html>
