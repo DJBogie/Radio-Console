@@ -134,7 +134,7 @@
         }
 
         .scale-numbers span {
-            font-size: 9px;
+            font-size: 8px;
             white-space: nowrap;
         }
 
@@ -235,7 +235,7 @@
                 <div class="scale-row">
                     <span class="band-label">FM</span>
                     <div class="scale-numbers">
-                        <span>86</span><span>88</span><span>90</span><span>92</span><span>94</span><span>96</span><span>98</span><span>100</span><span>102</span><span>104</span><span>106</span><span>108</span><span>110</span><span>112</span><span>115</span>
+                        <span>86</span><span>88</span><span>90</span><span>92</span><span>94</span><span>96</span><span>98</span><span>100</span><span>102</span><span>104</span><span>106</span><span>108</span><span>110</span><span>1155</span><span>120</span><span>1255</span><span>130</span>
                     </div>
                     <span class="scale-unit">MHz</span>
                 </div>
@@ -269,12 +269,12 @@
         </div>
 
         <div class="controls-panel">
-            <input type="range" id="tuner" min="86" max="115" step="1" value="86">
+            <input type="range" id="tuner" min="86" max="128" step="1" value="86">
             <div class="helper-text">Frequency Slide Tuner</div>
         </div>
     </div>
 
-    <!-- Complete Audio Library from Screenshot -->
+    <!-- Complete Audio Library matching all 43 tracks -->
     <audio id="track1" src="audio/across bourbon street.mp3" preload="auto" loop></audio>
     <audio id="track2" src="audio/always.mp3" preload="auto" loop></audio>
     <audio id="track3" src="audio/arise.mp3" preload="auto" loop></audio>
@@ -325,7 +325,7 @@
         const stationDisplay = document.getElementById('stationDisplay');
 
         const minFreq = 86;
-        const maxFreq = 115;
+        const maxFreq = 128;
 
         const stations = {
             86: { title: "TRANSMISSION: Across Bourbon Street", audio: document.getElementById('track1') },
@@ -357,7 +357,20 @@
             112: { title: "TRANSMISSION: Pacis", audio: document.getElementById('track27') },
             113: { title: "TRANSMISSION: Push", audio: document.getElementById('track28') },
             114: { title: "TRANSMISSION: Quantum Touch", audio: document.getElementById('track29') },
-            115: { title: "TRANSMISSION: Quaturo", audio: document.getElementById('track30') }
+            115: { title: "TRANSMISSION: Quaturo", audio: document.getElementById('track30') },
+            116: { title: "TRANSMISSION: Recalcitrant", audio: document.getElementById('track31') },
+            117: { title: "TRANSMISSION: Resounding", audio: document.getElementById('track32') },
+            118: { title: "TRANSMISSION: Sacrifice", audio: document.getElementById('track33') },
+            119: { title: "TRANSMISSION: Slow Think", audio: document.getElementById('track34') },
+            120: { title: "TRANSMISSION: Soleil", audio: document.getElementById('track35') },
+            121: { title: "TRANSMISSION: Spectrum", audio: document.getElementById('track36') },
+            122: { title: "TRANSMISSION: Stubborness", audio: document.getElementById('track37') },
+            123: { title: "TRANSMISSION: Tangerine", audio: document.getElementById('track38') },
+            124: { title: "TRANSMISSION: The Daunting", audio: document.getElementById('track39') },
+            125: { title: "TRANSMISSION: There", audio: document.getElementById('track40') },
+            126: { title: "TRANSMISSION: Twin Sparks", audio: document.getElementById('track41') },
+            127: { title: "TRANSMISSION: Ubiquity", audio: document.getElementById('track42') },
+            128: { title: "TRANSMISSION: Understanding", audio: document.getElementById('track43') }
         };
 
         function stopAllAudio() {
