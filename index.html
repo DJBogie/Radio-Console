@@ -113,30 +113,36 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-size: 12px;
+            font-size: 11px;
             color: #ccc;
-            margin-bottom: 8px;
-            letter-spacing: 1px;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
         }
 
         .band-label {
             color: #ff3333;
             font-weight: bold;
-            width: 45px;
+            width: 35px;
         }
 
         .scale-numbers {
             display: flex;
             justify-content: space-between;
             flex-grow: 1;
-            padding: 0 10px;
+            padding: 0 5px;
+            overflow: hidden;
+        }
+
+        .scale-numbers span {
+            font-size: 9px;
+            white-space: nowrap;
         }
 
         .scale-unit {
             color: #ff3333;
             font-weight: bold;
             font-size: 11px;
-            width: 40px;
+            width: 35px;
             text-align: right;
         }
 
@@ -146,7 +152,7 @@
             height: 16px;
             background: #181818;
             border-radius: 3px;
-            margin: 6px 45px 10px 45px;
+            margin: 6px 35px 8px 35px;
             border: 1px solid #333;
         }
 
@@ -187,7 +193,6 @@
             text-shadow: 0 0 6px rgba(76, 209, 55, 0.4);
         }
 
-        /* Original Slide Controls Panel */
         .controls-panel {
             display: flex;
             flex-direction: column;
@@ -230,7 +235,7 @@
                 <div class="scale-row">
                     <span class="band-label">FM</span>
                     <div class="scale-numbers">
-                        <span>86</span><span>89</span><span>92</span><span>95</span><span>98</span><span>101</span><span>104</span><span>109</span>
+                        <span>86</span><span>88</span><span>90</span><span>92</span><span>94</span><span>96</span><span>98</span><span>100</span><span>102</span><span>104</span><span>106</span><span>108</span><span>110</span><span>112</span><span>115</span>
                     </div>
                     <span class="scale-unit">MHz</span>
                 </div>
@@ -240,7 +245,7 @@
                     <div id="tuningBar" class="tuning-indicator-bar" style="left: 0%;"></div>
                 </div>
 
-                <!-- AM Band Row (535 - 1605 kHz) -->
+                <!-- AM Band Row -->
                 <div class="scale-row">
                     <span class="band-label" style="color: #ffaa33;">AM</span>
                     <div class="scale-numbers" style="color: #aaa;">
@@ -264,38 +269,55 @@
         </div>
 
         <div class="controls-panel">
-            <input type="range" id="tuner" min="86" max="109" step="1" value="86">
+            <input type="range" id="tuner" min="86" max="115" step="1" value="86">
             <div class="helper-text">Frequency Slide Tuner</div>
         </div>
     </div>
 
-    <!-- All 24 Local WAV Audio Files -->
-    <audio id="track1" src="audio/mass effect.mp3" preload="auto" loop></audio>
-    <audio id="track2" src="audio/there.mp3" preload="auto" loop></audio>
-    <audio id="track3" src="audio/oticons.mp3" preload="auto" loop></audio>
-    <audio id="track4" src="audio/caprizant.mp3" preload="auto" loop></audio>
-    <audio id="track5" src="audio/arise.mp3" preload="auto" loop></audio>
-    <audio id="track6" src="audio/stubborness.mp3" preload="auto" loop></audio>
-    <audio id="track7" src="audio/the daunting.mp3" preload="auto" loop></audio>
-    <audio id="track8" src="audio/quaturo.mp3" preload="auto" loop></audio>
-    <audio id="track9" src="audio/melancoly in flat.mp3" preload="auto" loop></audio>
-    <audio id="track10" src="audio/next flight home.mp3" preload="auto" loop></audio>
-    <audio id="track11" src="audio/cinderella shoe.mp3" preload="auto" loop></audio>
-    <audio id="track12" src="audio/chase.mp3" preload="auto" loop></audio>
-    <audio id="track13" src="audio/bang.mp3" preload="auto" loop></audio>
-    <audio id="track14" src="audio/monster.mp3" preload="auto" loop></audio>
-    <audio id="track15" src="audio/Bliss.mp3" preload="auto" loop></audio>
-    <audio id="track16" src="audio/tangerine.mp3" preload="auto" loop></audio>
-    <audio id="track17" src="audio/across bourbon street.mp3" preload="auto" loop></audio>
-    <audio id="track18" src="audio/eveille.mp3" preload="auto" loop></audio>
+    <!-- Complete Audio Library from Screenshot -->
+    <audio id="track1" src="audio/across bourbon street.mp3" preload="auto" loop></audio>
+    <audio id="track2" src="audio/always.mp3" preload="auto" loop></audio>
+    <audio id="track3" src="audio/arise.mp3" preload="auto" loop></audio>
+    <audio id="track4" src="audio/automatism.mp3" preload="auto" loop></audio>
+    <audio id="track5" src="audio/bang.mp3" preload="auto" loop></audio>
+    <audio id="track6" src="audio/bliss.mp3" preload="auto" loop></audio>
+    <audio id="track7" src="audio/caprizant.mp3" preload="auto" loop></audio>
+    <audio id="track8" src="audio/caroline neron.mp3" preload="auto" loop></audio>
+    <audio id="track9" src="audio/chase.mp3" preload="auto" loop></audio>
+    <audio id="track10" src="audio/cinderella shoe.mp3" preload="auto" loop></audio>
+    <audio id="track11" src="audio/cohesion.mp3" preload="auto" loop></audio>
+    <audio id="track12" src="audio/dancer.mp3" preload="auto" loop></audio>
+    <audio id="track13" src="audio/dynamite.mp3" preload="auto" loop></audio>
+    <audio id="track14" src="audio/equanimity.mp3" preload="auto" loop></audio>
+    <audio id="track15" src="audio/esprit itinerant.mp3" preload="auto" loop></audio>
+    <audio id="track16" src="audio/estrange.mp3" preload="auto" loop></audio>
+    <audio id="track17" src="audio/eveille.mp3" preload="auto" loop></audio>
+    <audio id="track18" src="audio/father.mp3" preload="auto" loop></audio>
     <audio id="track19" src="audio/grave.mp3" preload="auto" loop></audio>
-    <audio id="track20" src="audio/always.mp3" preload="auto" loop></audio>
-    <audio id="track21" src="audio/dancer.mp3" preload="auto" loop></audio>
-    <audio id="track22" src="audio/push.mp3" preload="auto" loop></audio>
-    <audio id="track23" src="audio/resounding.mp3" preload="auto" loop></audio>
-    <audio id="track24" src="audio/twin sparks.mp3" preload="auto" loop></audio>
-    <audio id="track25" src="audio/pacis.mp3" preload="auto" loop></audio>
-
+    <audio id="track20" src="audio/inversion.mp3" preload="auto" loop></audio>
+    <audio id="track21" src="audio/lucioles.mp3" preload="auto" loop></audio>
+    <audio id="track22" src="audio/mass effect.mp3" preload="auto" loop></audio>
+    <audio id="track23" src="audio/melancoly in flat.mp3" preload="auto" loop></audio>
+    <audio id="track24" src="audio/monster.mp3" preload="auto" loop></audio>
+    <audio id="track25" src="audio/next flight home.mp3" preload="auto" loop></audio>
+    <audio id="track26" src="audio/oticons.mp3" preload="auto" loop></audio>
+    <audio id="track27" src="audio/pacis.mp3" preload="auto" loop></audio>
+    <audio id="track28" src="audio/push.mp3" preload="auto" loop></audio>
+    <audio id="track29" src="audio/quantum touch.mp3" preload="auto" loop></audio>
+    <audio id="track30" src="audio/quaturo.mp3" preload="auto" loop></audio>
+    <audio id="track31" src="audio/recalcitrant.mp3" preload="auto" loop></audio>
+    <audio id="track32" src="audio/resounding.mp3" preload="auto" loop></audio>
+    <audio id="track33" src="audio/sacrifice.mp3" preload="auto" loop></audio>
+    <audio id="track34" src="audio/slow think.mp3" preload="auto" loop></audio>
+    <audio id="track35" src="audio/soleil.mp3" preload="auto" loop></audio>
+    <audio id="track36" src="audio/spectrum.mp3" preload="auto" loop></audio>
+    <audio id="track37" src="audio/stubborness.mp3" preload="auto" loop></audio>
+    <audio id="track38" src="audio/tangerine.mp3" preload="auto" loop></audio>
+    <audio id="track39" src="audio/the daunting.mp3" preload="auto" loop></audio>
+    <audio id="track40" src="audio/there.mp3" preload="auto" loop></audio>
+    <audio id="track41" src="audio/twin sparks.mp3" preload="auto" loop></audio>
+    <audio id="track42" src="audio/ubiquity.mp3" preload="auto" loop></audio>
+    <audio id="track43" src="audio/understanding.mp3" preload="auto" loop></audio>
 
     <script>
         const tuner = document.getElementById('tuner');
@@ -303,34 +325,39 @@
         const stationDisplay = document.getElementById('stationDisplay');
 
         const minFreq = 86;
-        const maxFreq = 109;
+        const maxFreq = 115;
 
         const stations = {
-            86: { title: "TRANSMISSION: Mass Effect", audio: document.getElementById('track1') },
-            87: { title: "TRANSMISSION: There", audio: document.getElementById('track2') },
-            88: { title: "TRANSMISSION: Oticons", audio: document.getElementById('track3') },
-            89: { title: "TRANSMISSION: Caprizant", audio: document.getElementById('track4') },
-            90: { title: "TRANSMISSION: Arise", audio: document.getElementById('track5') },
-            91: { title: "TRANSMISSION: Stubborness", audio: document.getElementById('track6') },
-            92: { title: "TRANSMISSION: The Daunting", audio: document.getElementById('track7') },
-            93: { title: "TRANSMISSION: Quaturo", audio: document.getElementById('track8') },
-            94: { title: "TRANSMISSION: Melancoly in Flat", audio: document.getElementById('track9') },
-            95: { title: "TRANSMISSION: Next Flight Home", audio: document.getElementById('track10') },
-            96: { title: "TRANSMISSION: Cinderella Shoe", audio: document.getElementById('track11') },
-            97: { title: "TRANSMISSION: Chase", audio: document.getElementById('track12') },
-            98: { title: "TRANSMISSION: Bang", audio: document.getElementById('track13') },
-            99: { title: "TRANSMISSION: Monster", audio: document.getElementById('track14') },
-            100: { title: "TRANSMISSION: Bliss", audio: document.getElementById('track15') },
-            101: { title: "TRANSMISSION: Tangerine", audio: document.getElementById('track16') },
-            102: { title: "TRANSMISSION: Across Bourbon Street", audio: document.getElementById('track17') },
-            103: { title: "TRANSMISSION: Eveille", audio: document.getElementById('track18') },
+            86: { title: "TRANSMISSION: Across Bourbon Street", audio: document.getElementById('track1') },
+            87: { title: "TRANSMISSION: Always", audio: document.getElementById('track2') },
+            88: { title: "TRANSMISSION: Arise", audio: document.getElementById('track3') },
+            89: { title: "TRANSMISSION: Automatism", audio: document.getElementById('track4') },
+            90: { title: "TRANSMISSION: Bang", audio: document.getElementById('track5') },
+            91: { title: "TRANSMISSION: Bliss", audio: document.getElementById('track6') },
+            92: { title: "TRANSMISSION: Caprizant", audio: document.getElementById('track7') },
+            93: { title: "TRANSMISSION: Caroline Neron", audio: document.getElementById('track8') },
+            94: { title: "TRANSMISSION: Chase", audio: document.getElementById('track9') },
+            95: { title: "TRANSMISSION: Cinderella Shoe", audio: document.getElementById('track10') },
+            96: { title: "TRANSMISSION: Cohesion", audio: document.getElementById('track11') },
+            97: { title: "TRANSMISSION: Dancer", audio: document.getElementById('track12') },
+            98: { title: "TRANSMISSION: Dynamite", audio: document.getElementById('track13') },
+            99: { title: "TRANSMISSION: Equanimity", audio: document.getElementById('track14') },
+            100: { title: "TRANSMISSION: Esprit Itinerant", audio: document.getElementById('track15') },
+            101: { title: "TRANSMISSION: Estrange", audio: document.getElementById('track16') },
+            102: { title: "TRANSMISSION: Eveille", audio: document.getElementById('track17') },
+            103: { title: "TRANSMISSION: Father", audio: document.getElementById('track18') },
             104: { title: "TRANSMISSION: Grave", audio: document.getElementById('track19') },
-            105: { title: "TRANSMISSION: Always", audio: document.getElementById('track20') },
-            106: { title: "TRANSMISSION: Dancer", audio: document.getElementById('track21') },
-            107: { title: "TRANSMISSION: Push", audio: document.getElementById('track22') },
-            108: { title: "TRANSMISSION: Resounding", audio: document.getElementById('track23') },
-	    109: { title: "TRANSMISSION: Twin Sparks", audio: document.getElementById('track24') },
-            110: { title: "TRANSMISSION: Pacis", audio: document.getElementById('track25') }
+            105: { title: "TRANSMISSION: Inversion", audio: document.getElementById('track20') },
+            106: { title: "TRANSMISSION: Lucioles", audio: document.getElementById('track21') },
+            107: { title: "TRANSMISSION: Mass Effect", audio: document.getElementById('track22') },
+            108: { title: "TRANSMISSION: Melancoly in Flat", audio: document.getElementById('track23') },
+            109: { title: "TRANSMISSION: Monster", audio: document.getElementById('track24') },
+            110: { title: "TRANSMISSION: Next Flight Home", audio: document.getElementById('track25') },
+            111: { title: "TRANSMISSION: Oticons", audio: document.getElementById('track26') },
+            112: { title: "TRANSMISSION: Pacis", audio: document.getElementById('track27') },
+            113: { title: "TRANSMISSION: Push", audio: document.getElementById('track28') },
+            114: { title: "TRANSMISSION: Quantum Touch", audio: document.getElementById('track29') },
+            115: { title: "TRANSMISSION: Quaturo", audio: document.getElementById('track30') }
         };
 
         function stopAllAudio() {
