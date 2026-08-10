@@ -18,9 +18,9 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            overflow-x: hidden;
             user-select: none;
         }
 
@@ -43,7 +43,6 @@
             text-transform: uppercase;
         }
 
-        /* Vintage Radio Faceplate */
         .radio-faceplate {
             background: #111;
             border: 4px solid #222;
@@ -58,7 +57,6 @@
             margin-bottom: 25px;
         }
 
-        /* Static Knobs */
         .knob-assembly {
             display: flex;
             flex-direction: column;
@@ -97,7 +95,6 @@
             font-weight: bold;
         }
 
-        /* Dial Glass Display Window */
         .dial-window {
             flex-grow: 1;
             background: #000;
@@ -146,7 +143,6 @@
             text-align: right;
         }
 
-        /* Visual Tuning Track & Pointer Bar */
         .tuning-track-container {
             position: relative;
             height: 16px;
@@ -178,7 +174,6 @@
             margin-top: 4px;
         }
 
-        /* Screen Status Display */
         .screen-display {
             background: rgba(8, 12, 8, 0.9);
             border: 2px solid #1a261a;
@@ -196,7 +191,7 @@
         .controls-panel {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
 
         input[type=range] {
@@ -221,17 +216,13 @@
     <div class="console-cabinet">
         <div class="brand-plate">DJBogie Radio Console High Fidelity Receiver</div>
         
-        <!-- Radio Faceplate Assembly -->
         <div class="radio-faceplate">
-            <!-- Left Volume Knob (Visual) -->
             <div class="knob-assembly">
                 <div class="knob"></div>
                 <div class="knob-label">VOLUME</div>
             </div>
 
-            <!-- Central Dial Glass Window -->
             <div class="dial-window">
-                <!-- FM Scale Row matching reference numbers from 88 to 108 -->
                 <div class="scale-row">
                     <span class="band-label">FM</span>
                     <div class="scale-numbers">
@@ -240,12 +231,10 @@
                     <span class="scale-unit">MHz</span>
                 </div>
 
-                <!-- Sliding Indicator Track -->
                 <div class="tuning-track-container">
                     <div id="tuningBar" class="tuning-indicator-bar" style="left: 0%;"></div>
                 </div>
 
-                <!-- AM Band Row -->
                 <div class="scale-row">
                     <span class="band-label" style="color: #ffaa33;">AM</span>
                     <div class="scale-numbers" style="color: #aaa;">
@@ -257,7 +246,6 @@
                 <div class="sub-footer-text">FM/AM BAND RADIO CONSOLE</div>
             </div>
 
-            <!-- Right Tuning Knob (Visual) -->
             <div class="knob-assembly">
                 <div class="knob" style="transform: rotate(45deg);"></div>
                 <div class="knob-label">TUNING</div>
@@ -274,146 +262,85 @@
         </div>
     </div>
 
-    <!-- Complete Original Audio Library (Unaltered order) -->
-    <audio id="track1" src="audio/across bourbon street.mp3" preload="auto" loop></audio>
-    <audio id="track2" src="audio/always.mp3" preload="auto" loop></audio>
-    <audio id="track3" src="audio/arise.mp3" preload="auto" loop></audio>
-    <audio id="track4" src="audio/automatism.mp3" preload="auto" loop></audio>
-    <audio id="track5" src="audio/bang.mp3" preload="auto" loop></audio>
-    <audio id="track6" src="audio/bliss.mp3" preload="auto" loop></audio>
-    <audio id="track7" src="audio/caprizant.mp3" preload="auto" loop></audio>
-    <audio id="track8" src="audio/caroline neron.mp3" preload="auto" loop></audio>
-    <audio id="track9" src="audio/chase.mp3" preload="auto" loop></audio>
-    <audio id="track10" src="audio/cinderella shoe.mp3" preload="auto" loop></audio>
-    <audio id="track11" src="audio/cohesion.mp3" preload="auto" loop></audio>
-    <audio id="track12" src="audio/dancer.mp3" preload="auto" loop></audio>
-    <audio id="track13" src="audio/dynamite.mp3" preload="auto" loop></audio>
-    <audio id="track14" src="audio/equanimity.mp3" preload="auto" loop></audio>
-    <audio id="track15" src="audio/esprit itinerant.mp3" preload="auto" loop></audio>
-    <audio id="track16" src="audio/estrange.mp3" preload="auto" loop></audio>
-    <audio id="track17" src="audio/eveille.mp3" preload="auto" loop></audio>
-    <audio id="track18" src="audio/father.mp3" preload="auto" loop></audio>
-    <audio id="track19" src="audio/grave.mp3" preload="auto" loop></audio>
-    <audio id="track20" src="audio/inversion.mp3" preload="auto" loop></audio>
-    <audio id="track21" src="audio/lucioles.mp3" preload="auto" loop></audio>
-    <audio id="track22" src="audio/mass effect.mp3" preload="auto" loop></audio>
-    <audio id="track23" src="audio/melancoly in flat.mp3" preload="auto" loop></audio>
-    <audio id="track24" src="audio/monster.mp3" preload="auto" loop></audio>
-    <audio id="track25" src="audio/next flight home.mp3" preload="auto" loop></audio>
-    <audio id="track26" src="audio/oticons.mp3" preload="auto" loop></audio>
-    <audio id="track27" src="audio/pacis.mp3" preload="auto" loop></audio>
-    <audio id="track28" src="audio/push.mp3" preload="auto" loop></audio>
-    <audio id="track29" src="audio/quantum touch.mp3" preload="auto" loop></audio>
-    <audio id="track30" src="audio/quaturo.mp3" preload="auto" loop></audio>
-    <audio id="track31" src="audio/recalcitrant.mp3" preload="auto" loop></audio>
-    <audio id="track32" src="audio/resounding.mp3" preload="auto" loop></audio>
-    <audio id="track33" src="audio/sacrifice.mp3" preload="auto" loop></audio>
-    <audio id="track34" src="audio/slow think.mp3" preload="auto" loop></audio>
-    <audio id="track35" src="audio/soleil.mp3" preload="auto" loop></audio>
-    <audio id="track36" src="audio/spectrum.mp3" preload="auto" loop></audio>
-    <audio id="track37" src="audio/stubborness.mp3" preload="auto" loop></audio>
-    <audio id="track38" src="audio/tangerine.mp3" preload="auto" loop></audio>
-    <audio id="track39" src="audio/the daunting.mp3" preload="auto" loop></audio>
-    <audio id="track40" src="audio/there.mp3" preload="auto" loop></audio>
-    <audio id="track41" src="audio/twin sparks.mp3" preload="auto" loop></audio>
-    <audio id="track42" src="audio/ubiquity.mp3" preload="auto" loop></audio>
-    <audio id="track43" src="audio/understanding.mp3" preload="auto" loop></audio>
+    <!-- Single Audio Element -->
+    <audio id="mainAudio" preload="auto" loop></audio>
 
     <script>
         const tuner = document.getElementById('tuner');
         const tuningBar = document.getElementById('tuningBar');
         const stationDisplay = document.getElementById('stationDisplay');
+        const audioEl = document.getElementById('mainAudio');
 
         const minFreq = 87.0;
         const maxFreq = 108.0;
 
-        // 43 tracks randomly assigned across 87.0 to 108.0 MHz
         const stations = {
-            87.0: { title: "TRANSMISSION: Quaturo", audio: document.getElementById('track30') },
-            87.5: { title: "TRANSMISSION: Automatism", audio: document.getElementById('track4') },
-            88.0: { title: "TRANSMISSION: Next Flight Home", audio: document.getElementById('track25') },
-            88.5: { title: "TRANSMISSION: Father", audio: document.getElementById('track18') },
-            89.0: { title: "TRANSMISSION: Cohesion", audio: document.getElementById('track11') },
-            89.5: { title: "TRANSMISSION: Sacrifice", audio: document.getElementById('track33') },
-            90.0: { title: "TRANSMISSION: Always", audio: document.getElementById('track2') },
-            90.5: { title: "TRANSMISSION: Monster", audio: document.getElementById('track24') },
-            91.0: { title: "TRANSMISSION: Caroline Neron", audio: document.getElementById('track8') },
-            91.5: { title: "TRANSMISSION: Slow Think", audio: document.getElementById('track34') },
-            92.0: { title: "TRANSMISSION: Inversion", audio: document.getElementById('track20') },
-            92.5: { title: "TRANSMISSION: Ubiquity", audio: document.getElementById('track42') },
-            93.0: { title: "TRANSMISSION: Understanding", audio: document.getElementById('track43') },
-            93.5: { title: "TRANSMISSION: Caprizant", audio: document.getElementById('track7') },
-            94.0: { title: "TRANSMISSION: Arise", audio: document.getElementById('track3') },
-            94.5: { title: "TRANSMISSION: Melancoly in Flat", audio: document.getElementById('track23') },
-            95.0: { title: "TRANSMISSION: Push", audio: document.getElementById('track28') },
-            95.5: { title: "TRANSMISSION: Recalcitrant", audio: document.getElementById('track31') },
-            96.0: { title: "TRANSMISSION: Across Bourbon Street", audio: document.getElementById('track1') },
-            96.5: { title: "TRANSMISSION: Eveille", audio: document.getElementById('track17') },
-            97.0: { title: "TRANSMISSION: Esprit Itinerant", audio: document.getElementById('track15') },
-            97.5: { title: "TRANSMISSION: The Daunting", audio: document.getElementById('track39') },
-            98.0: { title: "TRANSMISSION: Mass Effect", audio: document.getElementById('track22') },
-            98.5: { title: "TRANSMISSION: Spectrum", audio: document.getElementById('track36') },
-            99.0: { title: "TRANSMISSION: Bang", audio: document.getElementById('track5') },
-            99.5: { title: "TRANSMISSION: Tangerine", audio: document.getElementById('track38') },
-            100.0: { title: "TRANSMISSION: Quantum Touch", audio: document.getElementById('track29') },
-            100.5: { title: "TRANSMISSION: Bliss", audio: document.getElementById('track6') },
-            101.0: { title: "TRANSMISSION: Resounding", audio: document.getElementById('track32') },
-            101.5: { title: "TRANSMISSION: Oticons", audio: document.getElementById('track26') },
-            102.0: { title: "TRANSMISSION: Estrange", audio: document.getElementById('track16') },
-            102.5: { title: "TRANSMISSION: Twin Sparks", audio: document.getElementById('track41') },
-            103.0: { title: "TRANSMISSION: Pacis", audio: document.getElementById('track27') },
-            103.5: { title: "TRANSMISSION: Chase", audio: document.getElementById('track9') },
-            104.0: { title: "TRANSMISSION: Soleils", audio: document.getElementById('track35') },
-            104.5: { title: "TRANSMISSION: Grave", audio: document.getElementById('track19') },
-            105.0: { title: "TRANSMISSION: Stubborness", audio: document.getElementById('track37') },
-            105.5: { title: "TRANSMISSION: Cinderella Shoe", audio: document.getElementById('track10') },
-            106.0: { title: "TRANSMISSION: Dynamite", audio: document.getElementById('track13') },
-            106.5: { title: "TRANSMISSION: Equanimity", audio: document.getElementById('track14') },
-            107.0: { title: "TRANSMISSION: Lucioles", audio: document.getElementById('track21') },
-            107.5: { title: "TRANSMISSION: Dancer", audio: document.getElementById('track12') },
-            108.0: { title: "TRANSMISSION: There", audio: document.getElementById('track40') }
+            87.0: { title: "Quaturo", file: "audio/quaturo.mp3" },
+            87.5: { title: "Automatism", file: "audio/automatism.mp3" },
+            88.0: { title: "Next Flight Home", file: "audio/next flight home.mp3" },
+            88.5: { title: "Father", file: "audio/father.mp3" },
+            89.0: { title: "Cohesion", file: "audio/cohesion.mp3" },
+            89.5: { title: "Sacrifice", file: "audio/sacrifice.mp3" },
+            90.0: { title: "Always", file: "audio/always.mp3" },
+            90.5: { title: "Monster", file: "audio/monster.mp3" },
+            91.0: { title: "Caroline Neron", file: "audio/caroline neron.mp3" },
+            91.5: { title: "Slow Think", file: "audio/slow think.mp3" },
+            92.0: { title: "Inversion", file: "audio/inversion.mp3" },
+            92.5: { title: "Ubiquity", file: "audio/ubiquity.mp3" },
+            93.0: { title: "Understanding", file: "audio/understanding.mp3" },
+            93.5: { title: "Caprizant", file: "audio/caprizant.mp3" },
+            94.0: { title: "Arise", file: "audio/arise.mp3" },
+            94.5: { title: "Melancoly in Flat", file: "audio/melancoly in flat.mp3" },
+            95.0: { title: "Push", file: "audio/push.mp3" },
+            95.5: { title: "Recalcitrant", file: "audio/recalcitrant.mp3" },
+            96.0: { title: "Across Bourbon Street", file: "audio/across bourbon street.mp3" },
+            96.5: { title: "Eveille", file: "audio/eveille.mp3" },
+            97.0: { title: "Esprit Itinerant", file: "audio/esprit itinerant.mp3" },
+            97.5: { title: "The Daunting", file: "audio/the daunting.mp3" },
+            98.0: { title: "Mass Effect", file: "audio/mass effect.mp3" },
+            98.5: { title: "Spectrum", file: "audio/spectrum.mp3" },
+            99.0: { title: "Bang", file: "audio/bang.mp3" },
+            99.5: { title: "Tangerine", file: "audio/tangerine.mp3" },
+            100.0: { title: "Quantum Touch", file: "audio/quantum touch.mp3" },
+            100.5: { title: "Bliss", file: "audio/bliss.mp3" },
+            101.0: { title: "Resounding", file: "audio/resounding.mp3" },
+            101.5: { title: "Oticons", file: "audio/oticons.mp3" },
+            102.0: { title: "Estrange", file: "audio/estrange.mp3" },
+            102.5: { title: "Twin Sparks", file: "audio/twin sparks.mp3" },
+            103.0: { title: "Pacis", file: "audio/pacis.mp3" },
+            103.5: { title: "Chase", file: "audio/chase.mp3" },
+            104.0: { title: "Soleils", file: "audio/soleil.mp3" },
+            104.5: { title: "Grave", file: "audio/grave.mp3" },
+            105.0: { title: "Stubborness", file: "audio/stubborness.mp3" },
+            105.5: { title: "Cinderella Shoe", file: "audio/cinderella shoe.mp3" },
+            106.0: { title: "Dynamite", file: "audio/dynamite.mp3" },
+            106.5: { title: "Equanimity", file: "audio/equanimity.mp3" },
+            107.0: { title: "Lucioles", file: "audio/lucioles.mp3" },
+            107.5: { title: "Dancer", file: "audio/dancer.mp3" },
+            108.0: { title: "There", file: "audio/there.mp3" }
         };
-
-        function stopAllAudio() {
-            for (let key in stations) {
-                let aud = stations[key].audio;
-                aud.pause();
-                aud.currentTime = 0;
-                aud.muted = true;
-            }
-        }
 
         tuner.addEventListener('input', (e) => {
             const rawVal = parseFloat(e.target.value);
             const percent = ((rawVal - minFreq) / (maxFreq - minFreq)) * 100;
-            
             tuningBar.style.left = `${percent}%`;
 
             const keys = Object.keys(stations).map(Number);
-            let closestKey = keys[0];
+            let closestKey = keys.reduce((prev, curr) => Math.abs(curr - rawVal) < Math.abs(prev - rawVal) ? curr : prev);
             let minDiff = Math.abs(rawVal - closestKey);
 
-            for (let i = 1; i < keys.length; i++) {
-                let diff = Math.abs(rawVal - keys[i]);
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    closestKey = keys[i];
+            if (minDiff <= 0.25) {
+                let station = stations[closestKey];
+                stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (${closestKey.toFixed(1)} MHz)`;
+                
+                if (audioEl.src.indexOf(station.file) === -1) {
+                    audioEl.src = station.file;
+                    audioEl.play().catch(err => console.log("Playback interaction needed:", err));
                 }
-            }
-
-            const freqKeyFixed = closestKey.toFixed(1);
-            const lockedStation = stations[closestKey];
-
-            stopAllAudio();
-
-            if (minDiff <= 0.25 && lockedStation) {
-                stationDisplay.innerHTML = `[ LOCKED ] > ${lockedStation.title} (${freqKeyFixed} MHz)`;
-                let aud = lockedStation.audio;
-                aud.currentTime = 0;
-                aud.muted = false;
-                aud.play().catch(() => {});
             } else {
                 stationDisplay.innerHTML = `STATIC... [ FREQ: ${rawVal.toFixed(1)} MHz ]`;
+                audioEl.pause();
+                audioEl.src = "";
             }
         });
     </script>
