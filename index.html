@@ -209,6 +209,23 @@
             text-transform: uppercase;
             letter-spacing: 2px;
         }
+
+        /* AUDIO VISUALIZER */
+        .visualizer {
+            height: 150px;
+            margin: 0 0 20px 0;
+            padding: 8px;
+            background: #050805;
+            border: 2px solid #1a261a;
+            border-radius: 4px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
+        }
+
+        #visualizerCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
 <body>
@@ -256,6 +273,11 @@
             RECEIVER STATUS: STANDBY... SWEEP DIAL TO SCAN FREQUENCIES
         </div>
 
+
+        <div class="visualizer">
+            <canvas id="visualizerCanvas"></canvas>
+        </div>
+
         <div class="controls-panel">
             <input type="range" id="tuner" min="87.0" max="108.0" step="0.1" value="87.0">
             <div class="helper-text">Frequency Slide Tuner</div>
@@ -263,13 +285,130 @@
     </div>
 
     <!-- Single Audio Element -->
-    <audio id="mainAudio" preload="auto" crossorigin="anonymous" loop></audio>
+    <audio id="mainAudio" preload="auto" loop></audio>
 
     <script>
         const tuner = document.getElementById('tuner');
         const tuningBar = document.getElementById('tuningBar');
         const stationDisplay = document.getElementById('stationDisplay');
         const audioEl = document.getElementById('mainAudio');
+
+        // ============================
+        // AUDIO VISUALIZER
+        // ============================
+        const canvas = document.getElementById('visualizerCanvas');
+        const canvasCtx = canvas.getContext('2d');
+
+        let audioContext = null;
+        let analyser = null;
+        let sourceNode = null;
+        let visualizerStarted = false;
+
+        function resizeVisualizer() {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+
+            canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+            canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+
+            canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function setupVisualizer() {
+            if (visualizerStarted) return;
+
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+
+            analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.82;
+
+            // Connect the existing <audio> element to the analyser.
+            sourceNode = audioContext.createMediaElementSource(audioEl);
+            sourceNode.connect(analyser);
+            analyser.connect(audioContext.destination);
+
+            visualizerStarted = true;
+            resizeVisualizer();
+            drawVisualizer();
+        }
+
+        function drawVisualizer() {
+            requestAnimationFrame(drawVisualizer);
+
+            if (!analyser) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            analyser.getByteFrequencyData(dataArray);
+
+            canvasCtx.clearRect(0, 0, width, height);
+
+            // Subtle center line / glow
+            canvasCtx.strokeStyle = 'rgba(76, 209, 55, 0.18)';
+            canvasCtx.lineWidth = 1;
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, height / 2);
+            canvasCtx.lineTo(width, height / 2);
+            canvasCtx.stroke();
+
+            const barCount = 48;
+            const gap = 3;
+            const barWidth = (width - gap * (barCount - 1)) / barCount;
+
+            for (let i = 0; i < barCount; i++) {
+                // Log-style sampling gives the low frequencies more visual weight.
+                const index = Math.floor(
+                    Math.pow(i / barCount, 1.8) * (bufferLength - 1)
+                );
+
+                const value = dataArray[index] / 255;
+                const barHeight = Math.max(2, value * (height - 12));
+
+                const x = i * (barWidth + gap);
+                const y = height - barHeight;
+
+                const gradient = canvasCtx.createLinearGradient(0, y, 0, height);
+                gradient.addColorStop(0, '#e6e6e6');
+                gradient.addColorStop(0.35, '#4cd137');
+                gradient.addColorStop(1, '#182518');
+
+                canvasCtx.fillStyle = gradient;
+                canvasCtx.shadowBlur = value > 0.08 ? 8 : 0;
+                canvasCtx.shadowColor = '#4cd137';
+
+                canvasCtx.fillRect(x, y, barWidth, barHeight);
+            }
+
+            canvasCtx.shadowBlur = 0;
+        }
+
+        window.addEventListener('resize', resizeVisualizer);
+
+        // Draw the visualizer immediately so the display is visible even
+        // before a station is selected.
+        resizeVisualizer();
+        canvasCtx.fillStyle = '#050805';
+        canvasCtx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+
+        // Start the Web Audio analyser when music is about to play.
+        audioEl.addEventListener('play', () => {
+            try {
+                setupVisualizer();
+
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+            } catch (err) {
+                console.log('Visualizer setup:', err);
+            }
+        });
+
 
         const minFreq = 87.0;
         const maxFreq = 108.0;
@@ -333,10 +472,27 @@
                 let station = stations[closestKey];
                 stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (${closestKey.toFixed(1)} MHz)`;
                 
-                if (audioEl.src.indexOf(station.file) === -1) {
-                    audioEl.src = station.file;
-                    audioEl.play().catch(err => console.log("Playback interaction needed:", err));
+                // Initialize/resume the analyser directly from the tuner interaction.
+                // This is important because browsers may block AudioContext startup
+                // unless it happens inside a user gesture.
+                try {
+                    setupVisualizer();
+
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume();
+                    }
+                } catch (err) {
+                    console.error("Visualizer initialization failed:", err);
                 }
+
+                if (!audioEl.src.endsWith(station.file)) {
+                    audioEl.src = station.file;
+                    audioEl.load();
+                }
+
+                audioEl.play().catch(err => {
+                    console.log("Playback interaction needed:", err);
+                });
             } else {
                 stationDisplay.innerHTML = `STATIC... [ FREQ: ${rawVal.toFixed(1)} MHz ]`;
                 audioEl.pause();
