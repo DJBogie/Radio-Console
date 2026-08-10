@@ -3,144 +3,346 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Audio Visualizer</title>
+    <title>Radio Console - Independent Broadcast</title>
     <style>
         body {
-            background-color: #121212;
-            color: #e0e0e0;
+            background-color: #2b1d15;
+            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('photo/background.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: #e0d0c0;
             font-family: 'Courier New', Courier, monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            overflow-x: hidden;
+            user-select: none;
         }
 
-        .player-container {
-            background: #1e1e1e;
-            padding: 30px;
-            border-radius: 8px;
-            border: 2px solid #333;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        .console-cabinet {
+            background: linear-gradient(135deg, rgba(43, 29, 21, 0.92), rgba(24, 16, 12, 0.92));
+            border: 12px solid #080504;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 2px 8px rgba(255,255,255,0.05);
+            width: 780px;
             text-align: center;
-            width: 400px;
+            backdrop-filter: blur(2px);
         }
 
-        canvas {
-            width: 100%;
-            height: 120px;
-            background: #050805;
-            border: 2px solid #1a261a;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            display: block;
-        }
-
-        audio {
-            width: 100%;
+        .brand-plate {
+            font-size: 14px;
+            letter-spacing: 4px;
+            color: #8c7355;
             margin-bottom: 15px;
+            text-transform: uppercase;
         }
 
-        .instructions {
+        .radio-faceplate {
+            background: #111;
+            border: 4px solid #222;
+            border-radius: 8px;
+            padding: 20px 25px;
+            position: relative;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .knob-assembly {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 90px;
+        }
+
+        .knob {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #e0e0e0 30%, #888 65%, #333 100%);
+            border: 4px solid #111;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.8);
+            position: relative;
+            transform: rotate(-45deg);
+        }
+
+        .knob::after {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 20px;
+            background: #222;
+            border-radius: 2px;
+        }
+
+        .knob-label {
+            font-size: 11px;
+            color: #aaa;
+            letter-spacing: 2px;
+            margin-top: 8px;
+            font-weight: bold;
+        }
+
+        .dial-window {
+            flex-grow: 1;
+            background: #000;
+            border: 3px solid #2c2c2c;
+            border-radius: 4px;
+            padding: 12px 15px;
+            position: relative;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
+            text-align: left;
+        }
+
+        .scale-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #ccc;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .band-label {
+            color: #ff3333;
+            font-weight: bold;
+            width: 35px;
+        }
+
+        .scale-numbers {
+            display: flex;
+            justify-content: space-between;
+            flex-grow: 1;
+            padding: 0 5px;
+            overflow: hidden;
+        }
+
+        .scale-numbers span {
+            font-size: 9px;
+            white-space: nowrap;
+        }
+
+        .scale-unit {
+            color: #ff3333;
+            font-weight: bold;
+            font-size: 11px;
+            width: 35px;
+            text-align: right;
+        }
+
+        .tuning-track-container {
+            position: relative;
+            height: 16px;
+            background: #181818;
+            border-radius: 3px;
+            margin: 6px 35px 8px 35px;
+            border: 1px solid #333;
+        }
+
+        .tuning-indicator-bar {
+            position: absolute;
+            top: 2px;
+            bottom: 2px;
+            width: 12px;
+            background: #e6e6e6;
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(255,255,255,0.8);
+            transform: translateX(-50%);
+            transition: left 0.05s ease-out;
+        }
+
+        .sub-footer-text {
+            text-align: center;
             font-size: 11px;
             color: #888;
+            letter-spacing: 2px;
+            border-top: 1px solid #222;
+            padding-top: 6px;
+            margin-top: 4px;
+        }
+
+        .screen-display {
+            background: rgba(8, 12, 8, 0.9);
+            border: 2px solid #1a261a;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 15px;
+            color: #4cd137;
+            min-height: 32px;
+            margin-bottom: 20px;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.8);
             letter-spacing: 1px;
+            text-shadow: 0 0 6px rgba(76, 209, 55, 0.4);
+        }
+
+        .controls-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: #8c7355;
+            cursor: pointer;
+            height: 8px;
+            background: #111;
+            border-radius: 4px;
+        }
+
+        .helper-text {
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
     </style>
 </head>
 <body>
 
-    <div class="player-container">
-        <h3>Audio Visualizer</h3>
+    <div class="console-cabinet">
+        <div class="brand-plate">DJBogie Radio Console High Fidelity Receiver</div>
         
-        <!-- Canvas for the visualizer -->
-        <canvas id="visualizerCanvas" width="400" height="120"></canvas>
+        <div class="radio-faceplate">
+            <div class="knob-assembly">
+                <div class="knob"></div>
+                <div class="knob-label">VOLUME</div>
+            </div>
 
-        <!-- Standard Audio Element with crossOrigin enabled for Web Audio API -->
-        <audio id="audioEl" src="audio/quaturo.mp3" controls crossorigin="anonymous"></audio>
+            <div class="dial-window">
+                <div class="scale-row">
+                    <span class="band-label">FM</span>
+                    <div class="scale-numbers">
+                        <span>88</span><span>90</span><span>92</span><span>94</span><span>96</span><span>98</span><span>100</span><span>102</span><span>105</span><span>108</span>
+                    </div>
+                    <span class="scale-unit">MHz</span>
+                </div>
+
+                <div class="tuning-track-container">
+                    <div id="tuningBar" class="tuning-indicator-bar" style="left: 0%;"></div>
+                </div>
+
+                <div class="scale-row">
+                    <span class="band-label" style="color: #ffaa33;">AM</span>
+                    <div class="scale-numbers" style="color: #aaa;">
+                        <span>535</span><span>650</span><span>800</span><span>1000</span><span>1200</span><span>1400</span><span>1500</span><span>1605</span>
+                    </div>
+                    <span class="scale-unit" style="color: #ffaa33;">kHz</span>
+                </div>
+
+                <div class="sub-footer-text">FM/AM BAND RADIO CONSOLE</div>
+            </div>
+
+            <div class="knob-assembly">
+                <div class="knob" style="transform: rotate(45deg);"></div>
+                <div class="knob-label">TUNING</div>
+            </div>
+        </div>
         
-        <div class="instructions">Play audio to activate visualizer</div>
+        <div class="screen-display" id="stationDisplay">
+            RECEIVER STATUS: STANDBY... SWEEP DIAL TO SCAN FREQUENCIES
+        </div>
+
+        <div class="controls-panel">
+            <input type="range" id="tuner" min="87.0" max="108.0" step="0.1" value="87.0">
+            <div class="helper-text">Frequency Slide Tuner</div>
+        </div>
     </div>
 
+    <!-- Single Audio Element -->
+    <audio id="mainAudio" preload="auto" crossorigin="anonymous" loop></audio>
+
     <script>
-        const audioEl = document.getElementById('audioEl');
-        const canvas = document.getElementById('visualizerCanvas');
-        const canvasCtx = canvas.getContext('2d');
+        const tuner = document.getElementById('tuner');
+        const tuningBar = document.getElementById('tuningBar');
+        const stationDisplay = document.getElementById('stationDisplay');
+        const audioEl = document.getElementById('mainAudio');
 
-        let audioCtx = null;
-        let analyser = null;
-        let sourceNode = null;
-        let isInitialized = false;
+        const minFreq = 87.0;
+        const maxFreq = 108.0;
 
-        function initAudioPipeline() {
-            if (isInitialized) return;
+        const stations = {
+            87.0: { title: "Quaturo", file: "audio/quaturo.mp3" },
+            87.5: { title: "Automatism", file: "audio/automatism.mp3" },
+            88.0: { title: "Next Flight Home", file: "audio/next flight home.mp3" },
+            88.5: { title: "Father", file: "audio/father.mp3" },
+            89.0: { title: "Cohesion", file: "audio/cohesion.mp3" },
+            89.5: { title: "Sacrifice", file: "audio/sacrifice.mp3" },
+            90.0: { title: "Always", file: "audio/always.mp3" },
+            90.5: { title: "Monster", file: "audio/monster.mp3" },
+            91.0: { title: "Caroline Neron", file: "audio/caroline neron.mp3" },
+            91.5: { title: "Slow Think", file: "audio/slow think.mp3" },
+            92.0: { title: "Inversion", file: "audio/inversion.mp3" },
+            92.5: { title: "Ubiquity", file: "audio/ubiquity.mp3" },
+            93.0: { title: "Understanding", file: "audio/understanding.mp3" },
+            93.5: { title: "Caprizant", file: "audio/caprizant.mp3" },
+            94.0: { title: "Arise", file: "audio/arise.mp3" },
+            94.5: { title: "Melancoly in Flat", file: "audio/melancoly in flat.mp3" },
+            95.0: { title: "Push", file: "audio/push.mp3" },
+            95.5: { title: "Recalcitrant", file: "audio/recalcitrant.mp3" },
+            96.0: { title: "Across Bourbon Street", file: "audio/across bourbon street.mp3" },
+            96.5: { title: "Eveille", file: "audio/eveille.mp3" },
+            97.0: { title: "Esprit Itinerant", file: "audio/esprit itinerant.mp3" },
+            97.5: { title: "The Daunting", file: "audio/the daunting.mp3" },
+            98.0: { title: "Mass Effect", file: "audio/mass effect.mp3" },
+            98.5: { title: "Spectrum", file: "audio/spectrum.mp3" },
+            99.0: { title: "Bang", file: "audio/bang.mp3" },
+            99.5: { title: "Tangerine", file: "audio/tangerine.mp3" },
+            100.0: { title: "Quantum Touch", file: "audio/quantum touch.mp3" },
+            100.5: { title: "Bliss", file: "audio/bliss.mp3" },
+            101.0: { title: "Resounding", file: "audio/resounding.mp3" },
+            101.5: { title: "Oticons", file: "audio/oticons.mp3" },
+            102.0: { title: "Estrange", file: "audio/estrange.mp3" },
+            102.5: { title: "Twin Sparks", file: "audio/twin sparks.mp3" },
+            103.0: { title: "Pacis", file: "audio/pacis.mp3" },
+            103.5: { title: "Chase", file: "audio/chase.mp3" },
+            104.0: { title: "Soleils", file: "audio/soleil.mp3" },
+            104.5: { title: "Grave", file: "audio/grave.mp3" },
+            105.0: { title: "Stubborness", file: "audio/stubborness.mp3" },
+            105.5: { title: "Cinderella Shoe", file: "audio/cinderella shoe.mp3" },
+            106.0: { title: "Dynamite", file: "audio/dynamite.mp3" },
+            106.5: { title: "Equanimity", file: "audio/equanimity.mp3" },
+            107.0: { title: "Lucioles", file: "audio/lucioles.mp3" },
+            107.5: { title: "Dancer", file: "audio/dancer.mp3" },
+            108.0: { title: "There", file: "audio/there.mp3" }
+        };
 
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContext();
-                analyser = audioCtx.createAnalyser();
-                analyser.fftSize = 128; // Smaller size for chunkier, distinct frequency bars
+        tuner.addEventListener('input', (e) => {
+            const rawVal = parseFloat(e.target.value);
+            const percent = ((rawVal - minFreq) / (maxFreq - minFreq)) * 100;
+            tuningBar.style.left = `${percent}%`;
 
-                sourceNode = audioCtx.createMediaElementSource(audioEl);
-                sourceNode.connect(analyser);
-                analyser.connect(audioCtx.destination);
+            const keys = Object.keys(stations).map(Number);
+            let closestKey = keys.reduce((prev, curr) => Math.abs(curr - rawVal) < Math.abs(prev - rawVal) ? curr : prev);
+            let minDiff = Math.abs(rawVal - closestKey);
 
-                isInitialized = true;
-            } catch (e) {
-                console.error("Web Audio API setup error:", e);
-            }
-        }
-
-        // Ensure AudioContext starts/resumes upon play interaction
-        audioEl.addEventListener('play', () => {
-            initAudioPipeline();
-            if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
+            if (minDiff <= 0.25) {
+                let station = stations[closestKey];
+                stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (${closestKey.toFixed(1)} MHz)`;
+                
+                if (audioEl.src.indexOf(station.file) === -1) {
+                    audioEl.src = station.file;
+                    audioEl.play().catch(err => console.log("Playback interaction needed:", err));
+                }
+            } else {
+                stationDisplay.innerHTML = `STATIC... [ FREQ: ${rawVal.toFixed(1)} MHz ]`;
+                audioEl.pause();
+                audioEl.src = "";
             }
         });
-
-        function renderVisualizer() {
-            requestAnimationFrame(renderVisualizer);
-
-            canvasCtx.fillStyle = '#050805';
-            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-            if (!analyser || audioEl.paused) {
-                // Draw a flat line if paused or stopped
-                canvasCtx.lineWidth = 2;
-                canvasCtx.strokeStyle = '#4cd137';
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(0, canvas.height / 2);
-                canvasCtx.lineTo(canvas.width, canvas.height / 2);
-                canvasCtx.stroke();
-                return;
-            }
-
-            const bufferLength = analyser.frequencyBinCount;
-            const dataArray = new Uint8Array(bufferLength);
-            analyser.getByteFrequencyData(dataArray);
-
-            const barCount = 32;
-            const gap = 4;
-            const barWidth = (canvas.width - (gap * (barCount - 1))) / barCount;
-            
-            let x = 0;
-            for (let i = 0; i < barCount; i++) {
-                let barHeight = (dataArray[i] / 255) * canvas.height * 0.9;
-
-                canvasCtx.fillStyle = '#4cd137';
-                canvasCtx.shadowBlur = 6;
-                canvasCtx.shadowColor = '#4cd137';
-                
-                canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-
-                x += barWidth + gap;
-            }
-        }
-
-        // Start the render loop immediately
-        renderVisualizer();
     </script>
 </body>
 </html>
