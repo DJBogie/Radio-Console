@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* AUDIO WAVEFORM VISUALIZER */
+        /* MULTICOLOUR WAVEFORM VISUALIZER */
         .visualizer {
             height: 150px;
             margin: 0 0 20px 0;
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ============================
-        // AUDIO WAVEFORM VISUALIZER
+        // MULTICOLOUR WAVEFORM VISUALIZER
         // ============================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -319,9 +319,8 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
 
-            analyser.fftSize = 2048; // Higher resolution for smooth wave curves
+            analyser.fftSize = 2048;
 
-            // Connect the existing <audio> element to the analyser.
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
             analyser.connect(audioContext.destination);
@@ -340,8 +339,8 @@
 
             canvasCtx.clearRect(0, 0, width, height);
 
-            // Subtle center line / oscilloscope crosshair grid
-            canvasCtx.strokeStyle = 'rgba(76, 209, 55, 0.12)';
+            // Subtle center line grid
+            canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
             canvasCtx.lineWidth = 1;
             canvasCtx.beginPath();
             canvasCtx.moveTo(0, height / 2);
@@ -350,7 +349,7 @@
 
             if (!analyser) {
                 // Flatline when inactive
-                canvasCtx.strokeStyle = 'rgba(76, 209, 55, 0.3)';
+                canvasCtx.strokeStyle = 'rgba(255, 100, 150, 0.3)';
                 canvasCtx.lineWidth = 2;
                 canvasCtx.beginPath();
                 canvasCtx.moveTo(0, height / 2);
@@ -363,11 +362,18 @@
             const dataArray = new Uint8Array(bufferLength);
             analyser.getByteTimeDomainData(dataArray);
 
-            // Draw oscilloscope wavelength curve
-            canvasCtx.lineWidth = 2;
-            canvasCtx.strokeStyle = '#4cd137';
-            canvasCtx.shadowBlur = 8;
-            canvasCtx.shadowColor = '#4cd137';
+            // Create a multicolour horizontal gradient across the wavelength
+            const waveGradient = canvasCtx.createLinearGradient(0, 0, width, 0);
+            waveGradient.addColorStop(0.0, '#ff3366'); // Neon Pink
+            waveGradient.addColorStop(0.25, '#ffaa33'); // Warm Amber
+            waveGradient.addColorStop(0.5, '#4cd137');  // Retro Green
+            waveGradient.addColorStop(0.75, '#00d2d3'); // Cyan
+            waveGradient.addColorStop(1.0, '#5f27cd');  // Electric Purple
+
+            canvasCtx.lineWidth = 2.5;
+            canvasCtx.strokeStyle = waveGradient;
+            canvasCtx.shadowBlur = 10;
+            canvasCtx.shadowColor = '#00d2d3';
 
             canvasCtx.beginPath();
 
@@ -375,7 +381,7 @@
             let x = 0;
 
             for (let i = 0; i < bufferLength; i++) {
-                const v = dataArray[i] / 128.0; // convert byte to range [0, 2], center is 1.0
+                const v = dataArray[i] / 128.0;
                 const y = (v * height) / 2;
 
                 if (i === 0) {
@@ -389,15 +395,13 @@
 
             canvasCtx.lineTo(width, height / 2);
             canvasCtx.stroke();
-            canvasCtx.shadowBlur = 0; // Reset shadow
+            canvasCtx.shadowBlur = 0; // Reset shadow glow
         }
 
         window.addEventListener('resize', resizeVisualizer);
 
-        // Initial render frame
         resizeVisualizer();
 
-        // Start the Web Audio analyser when music plays
         audioEl.addEventListener('play', () => {
             try {
                 setupVisualizer();
