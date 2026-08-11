@@ -7,30 +7,32 @@
     <style>
         body {
             background-color: #2b1d15;
-            background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('photo/background.png');
+            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('photo/background.png');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
+            background-attachment: fixed;
             color: #e0d0c0;
             font-family: 'Courier New', Courier, monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            overflow-x: hidden;
             user-select: none;
         }
 
         .console-cabinet {
-            background: linear-gradient(135deg, rgba(43, 29, 21, 0.95), rgba(24, 16, 12, 0.95));
+            background: linear-gradient(135deg, rgba(43, 29, 21, 0.92), rgba(24, 16, 12, 0.92));
             border: 12px solid #080504;
             padding: 30px 40px;
             border-radius: 12px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 2px 8px rgba(255,255,255,0.05);
             width: 780px;
             text-align: center;
+            backdrop-filter: blur(2px);
         }
 
         .brand-plate {
@@ -41,7 +43,6 @@
             text-transform: uppercase;
         }
 
-        /* Vintage Radio Faceplate */
         .radio-faceplate {
             background: #111;
             border: 4px solid #222;
@@ -56,7 +57,6 @@
             margin-bottom: 25px;
         }
 
-        /* Static Knobs */
         .knob-assembly {
             display: flex;
             flex-direction: column;
@@ -95,7 +95,6 @@
             font-weight: bold;
         }
 
-        /* Dial Glass Display Window */
         .dial-window {
             flex-grow: 1;
             background: #000;
@@ -111,40 +110,45 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-size: 12px;
+            font-size: 11px;
             color: #ccc;
-            margin-bottom: 8px;
-            letter-spacing: 1px;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
         }
 
         .band-label {
             color: #ff3333;
             font-weight: bold;
-            width: 45px;
+            width: 35px;
         }
 
         .scale-numbers {
             display: flex;
             justify-content: space-between;
             flex-grow: 1;
-            padding: 0 10px;
+            padding: 0 5px;
+            overflow: hidden;
+        }
+
+        .scale-numbers span {
+            font-size: 9px;
+            white-space: nowrap;
         }
 
         .scale-unit {
             color: #ff3333;
             font-weight: bold;
             font-size: 11px;
-            width: 40px;
+            width: 35px;
             text-align: right;
         }
 
-        /* Visual Tuning Track & Pointer Bar */
         .tuning-track-container {
             position: relative;
             height: 16px;
             background: #181818;
             border-radius: 3px;
-            margin: 6px 45px 10px 45px;
+            margin: 6px 35px 8px 35px;
             border: 1px solid #333;
         }
 
@@ -170,7 +174,6 @@
             margin-top: 4px;
         }
 
-        /* Screen Status Display */
         .screen-display {
             background: rgba(8, 12, 8, 0.9);
             border: 2px solid #1a261a;
@@ -185,11 +188,10 @@
             text-shadow: 0 0 6px rgba(76, 209, 55, 0.4);
         }
 
-        /* Original Slide Controls Panel */
         .controls-panel {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
         }
 
         input[type=range] {
@@ -207,50 +209,60 @@
             text-transform: uppercase;
             letter-spacing: 2px;
         }
+
+        /* TRANSIENT GLEAM & LIGHT STREAM VISUALIZER */
+        .visualizer {
+            height: 160px;
+            margin: 0 0 20px 0;
+            padding: 8px;
+            background: #050805;
+            border: 2px solid #1a261a;
+            border-radius: 4px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
+        }
+
+        #visualizerCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
     </style>
 </head>
 <body>
 
     <div class="console-cabinet">
-        <div class="brand-plate">Model IV - Custom High Fidelity Receiver</div>
+        <div class="brand-plate">DJBogie Radio Console High Fidelity Receiver</div>
         
-        <!-- Radio Faceplate Assembly -->
         <div class="radio-faceplate">
-            <!-- Left Volume Knob (Visual) -->
             <div class="knob-assembly">
                 <div class="knob"></div>
                 <div class="knob-label">VOLUME</div>
             </div>
 
-            <!-- Central Dial Glass Window -->
             <div class="dial-window">
-                <!-- FM Scale Row -->
                 <div class="scale-row">
                     <span class="band-label">FM</span>
                     <div class="scale-numbers">
-                        <span>86</span><span>89</span><span>92</span><span>95</span><span>98</span><span>101</span><span>104</span><span>109</span>
+                        <span>88</span><span>90</span><span>92</span><span>94</span><span>96</span><span>98</span><span>100</span><span>102</span><span>105</span><span>108</span>
                     </div>
                     <span class="scale-unit">MHz</span>
                 </div>
 
-                <!-- Sliding Indicator Track -->
                 <div class="tuning-track-container">
                     <div id="tuningBar" class="tuning-indicator-bar" style="left: 0%;"></div>
                 </div>
 
-                <!-- AM Scale Row -->
                 <div class="scale-row">
                     <span class="band-label" style="color: #ffaa33;">AM</span>
                     <div class="scale-numbers" style="color: #aaa;">
-                        <span>53</span><span>68</span><span>82</span><span>100</span><span>120</span><span>140</span><span>160</span><span>x10</span>
+                        <span>535</span><span>650</span><span>800</span><span>1000</span><span>1200</span><span>1400</span><span>1500</span><span>1605</span>
                     </div>
-                    <span class="scale-unit" style="color: #ffaa33;">KHz</span>
+                    <span class="scale-unit" style="color: #ffaa33;">kHz</span>
                 </div>
 
-                <div class="sub-footer-text">AM/FM/SW 3 BAND RADIO MP3 MUSIC PLAYER</div>
+                <div class="sub-footer-text">FM/AM BAND RADIO CONSOLE</div>
             </div>
 
-            <!-- Right Tuning Knob (Visual) -->
             <div class="knob-assembly">
                 <div class="knob" style="transform: rotate(45deg);"></div>
                 <div class="knob-label">TUNING</div>
@@ -261,109 +273,337 @@
             RECEIVER STATUS: STANDBY... SWEEP DIAL TO SCAN FREQUENCIES
         </div>
 
+        <div class="visualizer">
+            <canvas id="visualizerCanvas"></canvas>
+        </div>
+
         <div class="controls-panel">
-            <input type="range" id="tuner" min="86" max="109" step="1" value="86">
+            <input type="range" id="tuner" min="87.0" max="108.0" step="0.1" value="87.0">
             <div class="helper-text">Frequency Slide Tuner</div>
         </div>
     </div>
 
-    <!-- All 24 Local WAV Audio Files -->
-    <audio id="track1" src="audio/mass effect.wav" preload="auto" loop></audio>
-    <audio id="track2" src="audio/there.wav" preload="auto" loop></audio>
-    <audio id="track3" src="audio/oticons.wav" preload="auto" loop></audio>
-    <audio id="track4" src="audio/caprizant.wav" preload="auto" loop></audio>
-    <audio id="track5" src="audio/arise.wav" preload="auto" loop></audio>
-    <audio id="track6" src="audio/stubborness.wav" preload="auto" loop></audio>
-    <audio id="track7" src="audio/the daunting.wav" preload="auto" loop></audio>
-    <audio id="track8" src="audio/quaturo.wav" preload="auto" loop></audio>
-    <audio id="track9" src="audio/melancoly in flat.wav" preload="auto" loop></audio>
-    <audio id="track10" src="audio/next flight home.wav" preload="auto" loop></audio>
-    <audio id="track11" src="audio/cinderella shoe.wav" preload="auto" loop></audio>
-    <audio id="track12" src="audio/chase.wav" preload="auto" loop></audio>
-    <audio id="track13" src="audio/writes itself.wav" preload="auto" loop></audio>
-    <audio id="track14" src="audio/monster.wav" preload="auto" loop></audio>
-    <audio id="track15" src="audio/Blisss.wav" preload="auto" loop></audio>
-    <audio id="track16" src="audio/tangerine.wav" preload="auto" loop></audio>
-    <audio id="track17" src="audio/across bourbon street.wav" preload="auto" loop></audio>
-    <audio id="track18" src="audio/eveille.wav" preload="auto" loop></audio>
-    <audio id="track19" src="audio/grave.wav" preload="auto" loop></audio>
-    <audio id="track20" src="audio/always.wav" preload="auto" loop></audio>
-    <audio id="track21" src="audio/dancer.wav" preload="auto" loop></audio>
-    <audio id="track22" src="audio/push.wav" preload="auto" loop></audio>
-    <audio id="track23" src="audio/resounding.wav" preload="auto" loop></audio>
-    <audio id="track24" src="audio/pacis.wav" preload="auto" loop></audio>
+    <!-- Single Audio Element -->
+    <audio id="mainAudio" preload="auto" loop></audio>
 
     <script>
         const tuner = document.getElementById('tuner');
         const tuningBar = document.getElementById('tuningBar');
         const stationDisplay = document.getElementById('stationDisplay');
+        const audioEl = document.getElementById('mainAudio');
 
-        const minFreq = 86;
-        const maxFreq = 109;
+        // ==========================================
+        // GLEAM, LIGHT STREAM & BPM-SYNCED ENGINE
+        // ==========================================
+        const canvas = document.getElementById('visualizerCanvas');
+        const canvasCtx = canvas.getContext('2d');
 
-        const stations = {
-            86: { title: "TRANSMISSION: Mass Effect", audio: document.getElementById('track1') },
-            87: { title: "TRANSMISSION: There", audio: document.getElementById('track2') },
-            88: { title: "TRANSMISSION: Oticons", audio: document.getElementById('track3') },
-            89: { title: "TRANSMISSION: Caprizant", audio: document.getElementById('track4') },
-            90: { title: "TRANSMISSION: Arise", audio: document.getElementById('track5') },
-            91: { title: "TRANSMISSION: Stubborness", audio: document.getElementById('track6') },
-            92: { title: "TRANSMISSION: The Daunting", audio: document.getElementById('track7') },
-            93: { title: "TRANSMISSION: Quaturo", audio: document.getElementById('track8') },
-            94: { title: "TRANSMISSION: Melancoly in Flat", audio: document.getElementById('track9') },
-            95: { title: "TRANSMISSION: Next Flight Home", audio: document.getElementById('track10') },
-            96: { title: "TRANSMISSION: Cinderella Shoe", audio: document.getElementById('track11') },
-            97: { title: "TRANSMISSION: Chase", audio: document.getElementById('track12') },
-            98: { title: "TRANSMISSION: Writes Itself", audio: document.getElementById('track13') },
-            99: { title: "TRANSMISSION: Monster", audio: document.getElementById('track14') },
-            100: { title: "TRANSMISSION: Blisss", audio: document.getElementById('track15') },
-            101: { title: "TRANSMISSION: Tangerine", audio: document.getElementById('track16') },
-            102: { title: "TRANSMISSION: Across Bourbon Street", audio: document.getElementById('track17') },
-            103: { title: "TRANNSMISSION: Eveille", audio: document.getElementById('track18') },
-            104: { title: "TRANSMISSION: Grave", audio: document.getElementById('track19') },
-            105: { title: "TRANSMISSION: Always", audio: document.getElementById('track20') },
-            106: { title: "TRANSMISSION: Dancer", audio: document.getElementById('track21') },
-            107: { title: "TRANSMISSION: Push", audio: document.getElementById('track22') },
-            108: { title: "TRANSMISSION: Resounding", audio: document.getElementById('track23') },
-            109: { title: "TRANSMISSION: Pacis", audio: document.getElementById('track24') }
-        };
+        let audioContext = null;
+        let analyser = null;
+        let sourceNode = null;
+        let visualizerStarted = false;
 
-        for (let key in stations) {
-            let aud = stations[key].audio;
-            aud.volume = 0.8;
-            aud.addEventListener('loadedmetadata', () => {
-                if (aud.duration && !isNaN(aud.duration)) {
-                    aud.currentTime = Math.random() * aud.duration;
-                }
-            });
-            aud.muted = true;
-            aud.play().catch(() => {});
+        const notes = [];
+        const noteCount = 6;
+        const symbols = ['♩', '♪', '♫', '♬'];
+
+        let estimatedBPM = 120;
+        let beatPulse = 0;
+        let lastKickEnergy = 0;
+        let historyBuffer = new Array(30).fill(0);
+        let historyIndex = 0;
+        let lastBeatTime = 0;
+        let streamProgress = 0; // Light stream particle runner position
+
+        function initNotes(width) {
+            notes.length = 0;
+            for (let i = 0; i < noteCount; i++) {
+                notes.push({
+                    x: (width / noteCount) * i,
+                    symbol: symbols[Math.floor(Math.random() * symbols.length)],
+                    size: 18
+                });
+            }
         }
 
-        tuner.addEventListener('input', (e) => {
-            const freq = parseInt(e.target.value);
-            const percent = ((freq - minFreq) / (maxFreq - minFreq)) * 100;
+        function resizeVisualizer() {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+
+            canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+            canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+
+            canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            if (notes.length === 0) {
+                initNotes(rect.width);
+            }
+        }
+
+        function setupVisualizer() {
+            if (visualizerStarted) return;
+
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+
+            analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.3;
+
+            sourceNode = audioContext.createMediaElementSource(audioEl);
+            sourceNode.connect(analyser);
+            analyser.connect(audioContext.destination);
+
+            visualizerStarted = true;
+            resizeVisualizer();
+            drawVisualizer();
+        }
+
+        function drawVisualizer() {
+            requestAnimationFrame(drawVisualizer);
+
+            const rect = canvas.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            // Phosphor display trail
+            canvasCtx.fillStyle = 'rgba(5, 8, 5, 0.38)';
+            canvasCtx.fillRect(0, 0, width, height);
+
+            const bufferLength = analyser ? analyser.frequencyBinCount : 64;
+            const dataArray = new Uint8Array(bufferLength);
+            let kickEnergy = 0;
+
+            if (analyser && !audioEl.paused) {
+                analyser.getByteFrequencyData(dataArray);
+
+                let subSum = 0;
+                let subCount = 4;
+                for (let i = 1; i <= subCount; i++) {
+                    subSum += dataArray[i];
+                }
+                kickEnergy = subSum / subCount / 255;
+            }
+
+            // Beat Detector
+            let historySum = historyBuffer.reduce((a, b) => a + b, 0);
+            let localAverage = historySum / historyBuffer.length;
             
-            tuningBar.style.left = `${percent}%`;
+            historyBuffer[historyIndex] = kickEnergy;
+            historyIndex = (historyIndex + 1) % historyBuffer.length;
 
-            const lockedStation = stations[freq];
+            let transientThreshold = localAverage * 1.35;
+            let isBeat = (kickEnergy > transientThreshold) && (kickEnergy > 0.25) && (kickEnergy > lastKickEnergy);
 
-            if (lockedStation) {
-                stationDisplay.innerHTML = `[ LOCKED ] > ${lockedStation.title} (${freq} MHz)`;
-                for (let key in stations) {
-                    let aud = stations[key].audio;
-                    if (aud === lockedStation.audio) {
-                        aud.muted = false;
-                        if (aud.paused) aud.play().catch(() => {});
-                    } else {
-                        aud.muted = true;
+            if (isBeat) {
+                let now = performance.now();
+                if (lastBeatTime > 0) {
+                    let deltaMs = now - lastBeatTime;
+                    if (deltaMs > 250 && deltaMs < 1000) {
+                        let instantaneousBPM = 60000 / deltaMs;
+                        estimatedBPM = estimatedBPM * 0.85 + instantaneousBPM * 0.15;
                     }
                 }
-            } else {
-                for (let key in stations) {
-                    stations[key].audio.muted = true;
+                lastBeatTime = now;
+                beatPulse = 1.0;
+            }
+            lastKickEnergy = kickEnergy;
+            beatPulse *= 0.85;
+
+            const centerY = height / 2;
+            const wavelengthFrequency = 0.015;
+            const waveAmplitude = 20 + kickEnergy * 30;
+            const time = Date.now() * 0.003;
+
+            // ==========================================
+            // INTENSIFIED BLOOM & WAVELENGTH RENDERING
+            // ==========================================
+            canvasCtx.save();
+            canvasCtx.shadowBlur = beatPulse > 0.4 ? 25 + (beatPulse * 25) : 10;
+            canvasCtx.shadowColor = beatPulse > 0.8 ? '#ffffff' : '#4cd137';
+            canvasCtx.strokeStyle = beatPulse > 0.8 ? '#ffffff' : `rgba(76, 209, 55, ${0.4 + kickEnergy * 0.6})`;
+            canvasCtx.lineWidth = 2 + (beatPulse * 2.5);
+            
+            canvasCtx.beginPath();
+            for (let x = 0; x < width; x += 2) {
+                const y = centerY + Math.sin(x * wavelengthFrequency + time) * waveAmplitude;
+                if (x === 0) canvasCtx.moveTo(x, y);
+                else canvasCtx.lineTo(x, y);
+            }
+            canvasCtx.stroke();
+            canvasCtx.restore();
+
+            // ==========================================
+            // LIGHT STREAM / TRACER BEAM EFFECT
+            // ==========================================
+            streamProgress += (2.5 + (kickEnergy * 4.0));
+            if (streamProgress > width) streamProgress = 0;
+
+            const streamY = centerY + Math.sin(streamProgress * wavelengthFrequency + time) * waveAmplitude;
+            canvasCtx.save();
+            const grad = canvasCtx.createRadialGradient(streamProgress, streamY, 2, streamProgress, streamY, 45);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+            grad.addColorStop(0.3, 'rgba(76, 209, 55, 0.6)');
+            grad.addColorStop(1, 'rgba(5, 8, 5, 0)');
+            canvasCtx.fillStyle = grad;
+            canvasCtx.beginPath();
+            canvasCtx.arc(streamProgress, streamY, 45, 0, Math.PI * 2);
+            canvasCtx.fill();
+            canvasCtx.restore();
+
+            // ==========================================
+            // MUSICAL NOTES WITH TRANSIENT GLEAM & FLARES
+            // ==========================================
+            let pixelsPerSecond = (width / 4) * (estimatedBPM / 60);
+
+            notes.forEach((note) => {
+                let speedMultiplier = 1.0 + (beatPulse * 1.2);
+                note.x += (pixelsPerSecond * 0.016) * speedMultiplier;
+
+                if (note.x > width + 20) {
+                    note.x = -20;
                 }
-                stationDisplay.innerHTML = `STATIC... [ FREQ: ${freq} MHz ]`;
+
+                const y = centerY + Math.sin(note.x * wavelengthFrequency + time) * waveAmplitude;
+
+                // Radial Starburst Flares on Strong Transients (beatPulse > 0.8)
+                if (beatPulse > 0.8) {
+                    canvasCtx.save();
+                    canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+                    canvasCtx.lineWidth = 1.5;
+                    const flareLen = 18 + (beatPulse * 14);
+                    
+                    // Horizontal/Vertical cross flare rays
+                    canvasCtx.beginPath();
+                    canvasCtx.moveTo(note.x - flareLen, y); canvasCtx.lineTo(note.x + flareLen, y);
+                    canvasCtx.moveTo(note.x, y - flareLen); canvasCtx.lineTo(note.x, y + flareLen);
+                    // Diagonal flare rays
+                    canvasCtx.moveTo(note.x - flareLen*0.7, y - flareLen*0.7); canvasCtx.lineTo(note.x + flareLen*0.7, y + flareLen*0.7);
+                    canvasCtx.moveTo(note.x - flareLen*0.7, y + flareLen*0.7); canvasCtx.lineTo(note.x + flareLen*0.7, y - flareLen*0.7);
+                    canvasCtx.stroke();
+
+                    // Bright radial bloom disc behind note
+                    const noteGlow = canvasCtx.createRadialGradient(note.x, y, 2, note.x, y, 30);
+                    noteGlow.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                    noteGlow.addColorStop(1, 'rgba(76, 209, 55, 0)');
+                    canvasCtx.fillStyle = noteGlow;
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(note.x, y, 30, 0, Math.PI * 2);
+                    canvasCtx.fill();
+                    canvasCtx.restore();
+                }
+
+                canvasCtx.save();
+                const currentSize = note.size + (beatPulse * 10);
+                canvasCtx.font = `${Math.floor(currentSize)}px sans-serif`;
+                canvasCtx.fillStyle = beatPulse > 0.8 ? '#ffffff' : '#4cd137';
+                canvasCtx.shadowBlur = beatPulse > 0.8 ? 30 : 12 + beatPulse * 12;
+                canvasCtx.shadowColor = beatPulse > 0.8 ? '#ffffff' : '#4cd137';
+                canvasCtx.textAlign = 'center';
+                canvasCtx.textBaseline = 'middle';
+                canvasCtx.fillText(note.symbol, note.x, y);
+                canvasCtx.restore();
+            });
+        }
+
+        window.addEventListener('resize', resizeVisualizer);
+        resizeVisualizer();
+
+        audioEl.addEventListener('play', () => {
+            try {
+                setupVisualizer();
+
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+            } catch (err) {
+                console.log('Visualizer setup:', err);
+            }
+        });
+
+        const minFreq = 87.0;
+        const maxFreq = 108.0;
+
+        const stations = {
+            87.0: { title: "Quaturo", file: "audio/quaturo.mp3" },
+            87.5: { title: "Automatism", file: "audio/automatism.mp3" },
+            88.0: { title: "Next Flight Home", file: "audio/next flight home.mp3" },
+            88.5: { title: "Father", file: "audio/father.mp3" },
+            89.0: { title: "Cohesion", file: "audio/cohesion.mp3" },
+            89.5: { title: "Sacrifice", file: "audio/sacrifice.mp3" },
+            90.0: { title: "Always", file: "audio/always.mp3" },
+            90.5: { title: "Monster", file: "audio/monster.mp3" },
+            91.0: { title: "Caroline Neron", file: "audio/caroline neron.mp3" },
+            91.5: { title: "Slow Think", file: "audio/slow think.mp3" },
+            92.0: { title: "Inversion", file: "audio/inversion.mp3" },
+            92.5: { title: "Ubiquity", file: "audio/ubiquity.mp3" },
+            93.0: { title: "Understanding", file: "audio/understanding.mp3" },
+            93.5: { title: "Caprizant", file: "audio/caprizant.mp3" },
+            94.0: { title: "Arise", file: "audio/arise.mp3" },
+            94.5: { title: "Melancoly in Flat", file: "audio/melancoly in flat.mp3" },
+            95.0: { title: "Push", file: "audio/push.mp3" },
+            95.5: { title: "Recalcitrant", file: "audio/recalcitrant.mp3" },
+            96.0: { title: "Across Bourbon Street", file: "audio/across bourbon street.mp3" },
+            96.5: { title: "Eveille", file: "audio/eveille.mp3" },
+            97.0: { title: "Esprit Itinerant", file: "audio/esprit itinerant.mp3" },
+            97.5: { title: "The Daunting", file: "audio/the daunting.mp3" },
+            98.0: { title: "Mass Effect", file: "audio/mass effect.mp3" },
+            98.5: { title: "Spectrum", file: "audio/spectrum.mp3" },
+            99.0: { title: "Bang", file: "audio/bang.mp3" },
+            99.5: { title: "Tangerine", file: "audio/tangerine.mp3" },
+            100.0: { title: "Quantum Touch", file: "audio/quantum touch.mp3" },
+            100.5: { title: "Bliss", file: "audio/bliss.mp3" },
+            101.0: { title: "Resounding", file: "audio/resounding.mp3" },
+            101.5: { title: "Oticons", file: "audio/oticons.mp3" },
+            102.0: { title: "Estrange", file: "audio/estrange.mp3" },
+            102.5: { title: "Twin Sparks", file: "audio/twin sparks.mp3" },
+            103.0: { title: "Pacis", file: "audio/pacis.mp3" },
+            103.5: { title: "Chase", file: "audio/chase.mp3" },
+            104.0: { title: "Soleils", file: "audio/soleil.mp3" },
+            104.5: { title: "Grave", file: "audio/grave.mp3" },
+            105.0: { title: "Stubborness", file: "audio/stubborness.mp3" },
+            105.5: { title: "Cinderella Shoe", file: "audio/cinderella shoe.mp3" },
+            106.0: { title: "Dynamite", file: "audio/dynamite.mp3" },
+            106.5: { title: "Equanimity", file: "audio/equanimity.mp3" },
+            107.0: { title: "Lucioles", file: "audio/lucioles.mp3" },
+            107.5: { title: "Dancer", file: "audio/dancer.mp3" },
+            108.0: { title: "There", file: "audio/there.mp3" }
+        };
+
+        tuner.addEventListener('input', (e) => {
+            const rawVal = parseFloat(e.target.value);
+            const percent = ((rawVal - minFreq) / (maxFreq - minFreq)) * 100;
+            tuningBar.style.left = `${percent}%`;
+
+            const keys = Object.keys(stations).map(Number);
+            let closestKey = keys.reduce((prev, curr) => Math.abs(curr - rawVal) < Math.abs(prev - rawVal) ? curr : prev);
+            let minDiff = Math.abs(rawVal - closestKey);
+
+            if (minDiff <= 0.25) {
+                let station = stations[closestKey];
+                stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (${closestKey.toFixed(1)} MHz)`;
+                
+                try {
+                    setupVisualizer();
+
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume();
+                    }
+                } catch (err) {
+                    console.error("Visualizer initialization failed:", err);
+                }
+
+                if (!audioEl.src.endsWith(station.file)) {
+                    audioEl.src = station.file;
+                    audioEl.load();
+                }
+
+                audioEl.play().catch(err => {
+                    console.log("Playback interaction needed:", err);
+                });
+            } else {
+                stationDisplay.innerHTML = `STATIC... [ FREQ: ${rawVal.toFixed(1)} MHz ]`;
+                audioEl.pause();
+                audioEl.src = "";
             }
         });
     </script>
