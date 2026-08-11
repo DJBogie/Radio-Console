@@ -210,9 +210,9 @@
             letter-spacing: 2px;
         }
 
-        /* DENSE OSCILLOSCOPE AUDIO WAVEFORM VISUALIZER */
+        /* MAGNIFIED DENSE OSCILLOSCOPE AUDIO WAVEFORM VISUALIZER */
         .visualizer {
-            height: 160px;
+            height: 240px; /* Magnified height */
             margin: 0 0 20px 0;
             padding: 8px;
             background: #000000;
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // DENSE OSCILLOSCOPE TIME-DOMAIN WAVEFORM ENGINE
+        // MAGNIFIED DENSE OSCILLOSCOPE WAVEFORM ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -319,7 +319,7 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
 
-            analyser.fftSize = 2048; // High resolution for dense vertical spikes
+            analyser.fftSize = 2048; 
             analyser.smoothingTimeConstant = 0.3;
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
@@ -338,7 +338,6 @@
             const width = rect.width;
             const height = rect.height;
 
-            // Pure black background matching the target aesthetic
             canvasCtx.fillStyle = '#000000';
             canvasCtx.fillRect(0, 0, width, height);
 
@@ -348,11 +347,10 @@
             if (analyser && !audioEl.paused) {
                 analyser.getByteTimeDomainData(dataArray);
             } else {
-                // Flat line simulation when paused or on standby
                 dataArray.fill(128);
             }
 
-            canvasCtx.lineWidth = 1;
+            canvasCtx.lineWidth = 1.5; // Slightly bolder line for the magnified view
             canvasCtx.strokeStyle = '#ffffff';
             canvasCtx.beginPath();
 
@@ -360,8 +358,9 @@
             let x = 0;
 
             for (let i = 0; i < bufferLength; i++) {
-                const v = dataArray[i] / 128.0; // Normalized around 1.0
-                const y = v * (height / 2);
+                const v = dataArray[i] / 128.0; 
+                // Magnified amplitude scale factor (multiplied vertical deviation from center)
+                const y = (v - 1.0) * (height * 1.5) + (height / 2);
 
                 if (i === 0) {
                     canvasCtx.moveTo(x, y);
