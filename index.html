@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* MONOCHROME STREAKING BEADS VISUALIZER */
+        /* DANCING DYNAMIC WAVEFORMS VISUALIZER */
         .visualizer {
             height: 150px;
             margin: 0 0 20px 0;
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // MONOCHROME STREAKING BEADS ENGINE
+        // DANCING DYNAMIC WAVEFORMS ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -303,22 +303,6 @@
         let sourceNode = null;
         let visualizerStarted = false;
 
-        const beadCount = 35;
-        const beads = [];
-
-        function initBeads(width, height) {
-            beads.length = 0;
-            for (let i = 0; i < beadCount; i++) {
-                beads.push({
-                    x: Math.random() * (width - 40) + 20,
-                    y: Math.random() * (height - 40) + 20,
-                    vx: (Math.random() - 0.5) * 4,
-                    vy: (Math.random() - 0.5) * 4,
-                    radius: Math.random() * 2 + 3.5
-                });
-            }
-        }
-
         function resizeVisualizer() {
             const rect = canvas.getBoundingClientRect();
             const dpr = window.devicePixelRatio || 1;
@@ -327,10 +311,6 @@
             canvas.height = Math.max(1, Math.floor(rect.height * dpr));
 
             canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-            if (beads.length === 0) {
-                initBeads(rect.width, rect.height);
-            }
         }
 
         function setupVisualizer() {
@@ -339,8 +319,8 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
 
-            analyser.fftSize = 64;
-            analyser.smoothingTimeConstant = 0.5;
+            analyser.fftSize = 512;
+            analyser.smoothingTimeConstant = 0.4;
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
@@ -358,89 +338,63 @@
             const width = rect.width;
             const height = rect.height;
 
-            // Semi-transparent clearing to generate glowing motion blur streaks behind the beads
-            canvasCtx.fillStyle = 'rgba(5, 8, 5, 0.25)';
+            // Phosphor persistence tail for smooth motion trails
+            canvasCtx.fillStyle = 'rgba(5, 8, 5, 0.3)';
             canvasCtx.fillRect(0, 0, width, height);
 
-            const bufferLength = analyser ? analyser.frequencyBinCount : beadCount;
+            const bufferLength = analyser ? analyser.frequencyBinCount : 64;
             const dataArray = new Uint8Array(bufferLength);
-            let audioEnergy = 0;
 
             if (analyser && !audioEl.paused) {
-                analyser.getByteFrequencyData(dataArray);
-                let sum = 0;
+                analyser.getByteTimeDomainData(dataArray);
+            } else {
+                // Gentle idle wave when paused
                 for (let i = 0; i < bufferLength; i++) {
-                    sum += dataArray[i];
+                    dataArray[i] = 128 + Math.sin(i * 0.1 + Date.now() * 0.003) * 10;
                 }
-                audioEnergy = sum / bufferLength / 255;
             }
 
-            // Update and render ricocheting monochrome beads
-            for (let i = 0; i < beads.length; i++) {
-                const bead = beads[i];
+            const time = Date.now() * 0.002;
 
-                const freqFactor = analyser && !audioEl.paused ? (dataArray[i % bufferLength] / 255) : 0.1;
-                let speedBoost = 1 + (freqFactor * 2.8);
+            // Render multiple dancing layered glowing waveforms
+            const waveLayers = [
+                { alpha: 0.25, color: '#1b4d1e', lineWidth: 4, yOffset: 0, speed: 1.0 },
+                { alpha: 0.5, color: '#328836', lineWidth: 2.5, yOffset: Math.sin(time * 0.7) * 8, speed: 1.2 },
+                { alpha: 0.85, color: '#4cd137', lineWidth: 1.8, yOffset: Math.cos(time * 0.9) * 12, speed: 1.5 },
+                { alpha: 1.0, color: '#baffb2', lineWidth: 1, yOffset: Math.sin(time * 1.3) * 6, speed: 0.8 }
+            ];
 
-                bead.x += bead.vx * speedBoost;
-                bead.y += bead.vy * speedBoost;
-
-                // Wall ricochets
-                if (bead.x - bead.radius < 0) {
-                    bead.x = bead.radius;
-                    bead.vx *= -1;
-                } else if (bead.x + bead.radius > width) {
-                    bead.x = width - bead.radius;
-                    bead.vx *= -1;
-                }
-
-                if (bead.y - bead.radius < 0) {
-                    bead.y = bead.radius;
-                    bead.vy *= -1;
-                } else if (bead.y + bead.radius > height) {
-                    bead.y = height - bead.radius;
-                    bead.vy *= -1;
-                }
-
-                // Inter-bead elastic collisions
-                for (let j = i + 1; j < beads.length; j++) {
-                    const other = beads[j];
-                    const dx = other.x - bead.x;
-                    const dy = other.y - bead.y;
-                    const dist = Math.sqrt(dx * dx + dy * dy);
-                    const minDist = bead.radius + other.radius;
-
-                    if (dist < minDist) {
-                        const overlap = 0.5 * (minDist - dist);
-                        const nx = dx / (dist || 1);
-                        const ny = dy / (dist || 1);
-
-                        bead.x -= nx * overlap;
-                        bead.y -= ny * overlap;
-                        other.x += nx * overlap;
-                        other.y += ny * overlap;
-
-                        const kx = bead.vx - other.vx;
-                        const ky = bead.vy - other.vy;
-                        const p = 2 * (nx * kx + ny * ky) / 2;
-
-                        bead.vx -= p * nx;
-                        bead.vy -= p * ny;
-                        other.vx += p * nx;
-                        other.vy += p * ny;
-                    }
-                }
-
-                // Render classic phosphor-green glowing bead with motion streak
+            waveLayers.forEach((layer, index) => {
                 canvasCtx.save();
-                canvasCtx.shadowBlur = 10 + (audioEnergy * 12);
+                canvasCtx.strokeStyle = layer.color;
+                canvasCtx.globalAlpha = layer.alpha;
+                canvasCtx.lineWidth = layer.lineWidth;
+                canvasCtx.shadowBlur = 12;
                 canvasCtx.shadowColor = '#4cd137';
-                canvasCtx.fillStyle = '#baffb2';
+
                 canvasCtx.beginPath();
-                canvasCtx.arc(bead.x, bead.y, bead.radius, 0, Math.PI * 2);
-                canvasCtx.fill();
+
+                const sliceWidth = width / bufferLength;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0;
+                    // Introduce phase shifting and harmonic dancing oscillations per layer
+                    const waveMod = Math.sin(i * 0.05 + time * layer.speed + index) * 5;
+                    const y = (height / 2) + layer.yOffset + waveMod + ((v - 1) * (height / 2) * 1.2);
+
+                    if (i === 0) {
+                        canvasCtx.moveTo(x, y);
+                    } else {
+                        canvasCtx.lineTo(x, y);
+                    }
+
+                    x += sliceWidth;
+                }
+
+                canvasCtx.stroke();
                 canvasCtx.restore();
-            }
+            });
         }
 
         window.addEventListener('resize', resizeVisualizer);
