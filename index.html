@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* MULTIPLE CARTWHEELING STICKMEN VISUALIZER */
+        /* MUSICAL NOTES WAVE VISUALIZER */
         .visualizer {
             height: 160px;
             margin: 0 0 20px 0;
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // MULTIPLE CARTWHEELING STICKMEN ENGINE
+        // MUSICAL NOTES ON WAVE ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -303,20 +303,21 @@
         let sourceNode = null;
         let visualizerStarted = false;
 
-        const cartwheelers = [];
-        const count = 5;
+        const notes = [];
+        const noteCount = 12;
+        const symbols = ['♩', '♪', '♫', '♬'];
 
-        function initCartwheelers(width, height) {
-            cartwheelers.length = 0;
-            for (let i = 0; i < count; i++) {
-                cartwheelers.push({
-                    x: 40 + Math.random() * (width - 80),
-                    y: 30 + Math.random() * (height - 60),
-                    vx: (Math.random() > 0.5 ? 1 : -1) * (1.8 + Math.random() * 1.5),
-                    vy: (Math.random() > 0.5 ? 1 : -1) * (1.2 + Math.random() * 1.2),
-                    rotation: Math.random() * Math.PI * 2,
-                    spinRate: (Math.random() > 0.5 ? 1 : -1) * (0.06 + Math.random() * 0.06),
-                    phase: i * 1.5
+        function initNotes(width, height) {
+            notes.length = 0;
+            for (let i = 0; i < noteCount; i++) {
+                notes.push({
+                    x: Math.random() * width,
+                    speed: 1.5 + Math.random() * 2.0,
+                    symbol: symbols[Math.floor(Math.random() * symbols.length)],
+                    size: 16 + Math.random() * 12,
+                    frequency: 0.015 + Math.random() * 0.01,
+                    amplitude: 25 + Math.random() * 30,
+                    phaseOffset: Math.random() * Math.PI * 2
                 });
             }
         }
@@ -330,8 +331,8 @@
 
             canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-            if (cartwheelers.length === 0) {
-                initCartwheelers(rect.width, rect.height);
+            if (notes.length === 0) {
+                initNotes(rect.width, rect.height);
             }
         }
 
@@ -360,7 +361,7 @@
             const width = rect.width;
             const height = rect.height;
 
-            // Phosphor fade trail for motion blur effect across the frame
+            // Phosphor fade trail
             canvasCtx.fillStyle = 'rgba(5, 8, 5, 0.35)';
             canvasCtx.fillRect(0, 0, width, height);
 
@@ -377,64 +378,43 @@
                 audioEnergy = sum / bufferLength / 255;
             }
 
+            const centerY = height / 2;
+
+            // Draw underlying smooth sine wave audio path
+            canvasCtx.strokeStyle = 'rgba(76, 209, 55, 0.25)';
+            canvasCtx.lineWidth = 1.5;
+            canvasCtx.beginPath();
+            for (let x = 0; x < width; x += 2) {
+                const waveY = centerY + Math.sin(x * 0.02 + Date.now() * 0.003) * (15 + audioEnergy * 35);
+                if (x === 0) canvasCtx.moveTo(x, waveY);
+                else canvasCtx.lineTo(x, waveY);
+            }
+            canvasCtx.stroke();
+
+            // Update and draw gliding musical notes
             const time = Date.now() * 0.003;
-
-            cartwheelers.forEach((c, i) => {
+            notes.forEach((note, i) => {
                 const freqVal = analyser && !audioEl.paused ? (dataArray[i % bufferLength] / 255) : 0.2;
-                const speedBoost = 1.0 + (audioEnergy * 2.0) + (freqVal * 0.5);
+                const currentSpeed = note.speed * (1.0 + audioEnergy * 2.5);
 
-                // Update position with ricochet bouncing off frame borders
-                c.x += c.vx * speedBoost;
-                c.y += c.vy * speedBoost;
+                note.x += currentSpeed;
+                if (note.x > width + 20) {
+                    note.x = -20;
+                    note.y = Math.random() * height;
+                }
 
-                const margin = 24;
-                if (c.x < margin) { c.x = margin; c.vx *= -1; c.spinRate *= -1; }
-                if (c.x > width - margin) { c.x = width - margin; c.vx *= -1; c.spinRate *= -1; }
-                if (c.y < margin + 10) { c.y = margin + 10; c.vy *= -1; c.spinRate *= -1; }
-                if (c.y > height - margin) { c.y = height - margin; c.vy *= -1; c.spinRate *= -1; }
-
-                // Continuous cartwheel rotation driven by spin rate & audio intensity
-                c.rotation += c.spinRate * (1.0 + audioEnergy * 2.5);
+                // Calculate vertical position gliding along the wave
+                const currentAmp = note.amplitude * (1.0 + audioEnergy * 1.5);
+                const y = centerY + Math.sin(note.x * note.frequency + time + note.phaseOffset) * currentAmp;
 
                 canvasCtx.save();
-                canvasCtx.translate(c.x, c.y);
-                canvasCtx.rotate(c.rotation);
-
-                canvasCtx.strokeStyle = '#4cd137';
+                canvasCtx.font = `${Math.floor(note.size + audioEnergy * 6)}px sans-serif`;
                 canvasCtx.fillStyle = '#4cd137';
-                canvasCtx.lineWidth = 1.8;
                 canvasCtx.shadowBlur = 10;
                 canvasCtx.shadowColor = '#4cd137';
-
-                // Head
-                canvasCtx.beginPath();
-                canvasCtx.arc(0, -26, 5, 0, Math.PI * 2);
-                canvasCtx.stroke();
-
-                // Torso
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(0, -20);
-                canvasCtx.lineTo(0, 2);
-                canvasCtx.stroke();
-
-                // Arms (cartwheeling spread)
-                const armSpread = Math.sin(time * 8 + c.phase) * 7;
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(0, -12);
-                canvasCtx.lineTo(-18 - armSpread, -12);
-                canvasCtx.moveTo(0, -12);
-                canvasCtx.lineTo(18 + armSpread, -12);
-                canvasCtx.stroke();
-
-                // Legs (cartwheeling splits)
-                const legSpread = Math.cos(time * 8 + c.phase) * 7;
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(0, 2);
-                canvasCtx.lineTo(-15 - legSpread, 16);
-                canvasCtx.moveTo(0, 2);
-                canvasCtx.lineTo(15 + legSpread, 16);
-                canvasCtx.stroke();
-
+                canvasCtx.textAlign = 'center';
+                canvasCtx.textBaseline = 'middle';
+                canvasCtx.fillText(note.symbol, note.x, y);
                 canvasCtx.restore();
             });
         }
