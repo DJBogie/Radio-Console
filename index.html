@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* TIGHTLY SYNCED AUDIO WAVEFORM VISUALIZER */
+        /* RICOCHETING AUDIO BEADS VISUALIZER */
         .visualizer {
             height: 150px;
             margin: 0 0 20px 0;
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // HIGH-PRECISION RESPONSIVE WAVEFORM SETUP
+        // RICOCHETING AUDIO BEADS PHYSICS ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -303,6 +303,25 @@
         let sourceNode = null;
         let visualizerStarted = false;
 
+        const beadCount = 35;
+        const beads = [];
+
+        const colorPalette = ['#ff3366', '#ffaa33', '#4cd137', '#00d2d3', '#5f27cd', '#ff6b81', '#1e90ff'];
+
+        function initBeads(width, height) {
+            beads.length = 0;
+            for (let i = 0; i < beadCount; i++) {
+                beads.push({
+                    x: Math.random() * (width - 40) + 20,
+                    y: Math.random() * (height - 40) + 20,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4,
+                    radius: Math.random() * 3 + 4,
+                    color: colorPalette[i % colorPalette.length]
+                });
+            }
+        }
+
         function resizeVisualizer() {
             const rect = canvas.getBoundingClientRect();
             const dpr = window.devicePixelRatio || 1;
@@ -311,6 +330,10 @@
             canvas.height = Math.max(1, Math.floor(rect.height * dpr));
 
             canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            if (beads.length === 0) {
+                initBeads(rect.width, rect.height);
+            }
         }
 
         function setupVisualizer() {
@@ -319,9 +342,8 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
 
-            // Lower fftSize for tighter, more dynamic response frames
-            analyser.fftSize = 1024;
-            analyser.smoothingTimeConstant = 0.35; // Reduced smoothing for instantaneous reaction to transients
+            analyser.fftSize = 64;
+            analyser.smoothingTimeConstant = 0.5;
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
@@ -341,68 +363,88 @@
 
             canvasCtx.clearRect(0, 0, width, height);
 
-            // Oscilloscope center baseline grid
-            canvasCtx.strokeStyle = 'rgba(76, 209, 55, 0.12)';
-            canvasCtx.lineWidth = 1;
-            canvasCtx.beginPath();
-            canvasCtx.moveTo(0, height / 2);
-            canvasCtx.lineTo(width, height / 2);
-            canvasCtx.stroke();
-
-            if (!analyser || audioEl.paused) {
-                // Responsive idle breathing line when paused or silent
-                canvasCtx.strokeStyle = 'rgba(76, 209, 55, 0.3)';
-                canvasCtx.lineWidth = 2;
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(0, height / 2);
-                canvasCtx.lineTo(width, height / 2);
-                canvasCtx.stroke();
-                return;
-            }
-
-            const bufferLength = analyser.fftSize;
+            const bufferLength = analyser ? analyser.frequencyBinCount : beadCount;
             const dataArray = new Uint8Array(bufferLength);
-            analyser.getByteTimeDomainData(dataArray);
+            let audioEnergy = 0;
 
-            // Zero-crossing search algorithm to lock waveform phase and eliminate screen jitter
-            let startIndex = 0;
-            let foundZeroCrossing = false;
-            for (let i = 0; i < bufferLength / 2; i++) {
-                if (dataArray[i] < 128 && dataArray[i + 1] >= 128) {
-                    startIndex = i;
-                    foundZeroCrossing = true;
-                    break;
+            if (analyser && !audioEl.paused) {
+                analyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    sum += dataArray[i];
                 }
-            }
-            if (!foundZeroCrossing) startIndex = 0;
-
-            // Render crisp, phase-locked reactive waveform
-            canvasCtx.lineWidth = 2;
-            canvasCtx.strokeStyle = '#4cd137';
-            canvasCtx.shadowBlur = 10;
-            canvasCtx.shadowColor = '#4cd137';
-
-            canvasCtx.beginPath();
-
-            const drawLength = bufferLength - startIndex;
-            const sliceWidth = width / drawLength;
-            let x = 0;
-
-            for (let i = startIndex; i < bufferLength; i++) {
-                const v = dataArray[i] / 128.0;
-                const y = (v * height) / 2;
-
-                if (i === startIndex) {
-                    canvasCtx.moveTo(x, y);
-                } else {
-                    canvasCtx.lineTo(x, y);
-                }
-
-                x += sliceWidth;
+                audioEnergy = sum / bufferLength / 255; // Normalized 0 to 1
             }
 
-            canvasCtx.stroke();
-            canvasCtx.shadowBlur = 0;
+            // Update and render ricocheting beads
+            for (let i = 0; i < beads.length; i++) {
+                const bead = beads[i];
+
+                // Modulate velocity based on audio frequency reactivity
+                const freqFactor = analyser && !audioEl.paused ? (dataArray[i % bufferLength] / 255) : 0.1;
+                let speedBoost = 1 + (freqFactor * 2.5);
+
+                bead.x += bead.vx * speedBoost;
+                bead.y += bead.vy * speedBoost;
+
+                // Wall ricochets (bounce off frame borders)
+                if (bead.x - bead.radius < 0) {
+                    bead.x = bead.radius;
+                    bead.vx *= -1;
+                } else if (bead.x + bead.radius > width) {
+                    bead.x = width - bead.radius;
+                    bead.vx *= -1;
+                }
+
+                if (bead.y - bead.radius < 0) {
+                    bead.y = bead.radius;
+                    bead.vy *= -1;
+                } else if (bead.y + bead.radius > height) {
+                    bead.y = height - bead.radius;
+                    bead.vy *= -1;
+                }
+
+                // Inter-bead collisions (elastic ricochets between beads)
+                for (let j = i + 1; j < beads.length; j++) {
+                    const other = beads[j];
+                    const dx = other.x - bead.x;
+                    const dy = other.y - bead.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const minDist = bead.radius + other.radius;
+
+                    if (dist < minDist) {
+                        // Overlap resolution
+                        const overlap = 0.5 * (minDist - dist);
+                        const nx = dx / (dist || 1);
+                        const ny = dy / (dist || 1);
+
+                        bead.x -= nx * overlap;
+                        bead.y -= ny * overlap;
+                        other.x += nx * overlap;
+                        other.y += ny * overlap;
+
+                        // Swap velocity components along normal (elastic collision)
+                        const kx = bead.vx - other.vx;
+                        const ky = bead.vy - other.vy;
+                        const p = 2 * (nx * kx + ny * ky) / 2;
+
+                        bead.vx -= p * nx;
+                        bead.vy -= p * ny;
+                        other.vx += p * nx;
+                        other.vy += p * ny;
+                    }
+                }
+
+                // Render glowing bead
+                canvasCtx.save();
+                canvasCtx.shadowBlur = 8 + (audioEnergy * 10);
+                canvasCtx.shadowColor = bead.color;
+                canvasCtx.fillStyle = bead.color;
+                canvasCtx.beginPath();
+                canvasCtx.arc(bead.x, bead.y, bead.radius, 0, Math.PI * 2);
+                canvasCtx.fill();
+                canvasCtx.restore();
+            }
         }
 
         window.addEventListener('resize', resizeVisualizer);
