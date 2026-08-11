@@ -361,9 +361,11 @@
             let x = 0;
 
             for (let i = 0; i < bufferLength; i++) {
-                // Normalize byte data (0 to 255) to a -1 to 1 range, inverted vertically
+                // Normalize byte data (0 to 255) to a -1 to 1 range
                 const v = (dataArray[i] / 128.0) - 1.0;
-                const y = centerY + (v * (height * 0.45));
+                
+                // INVERTED: Subtraction flips the wave vertically
+                const y = centerY - (v * (height * 0.45));
 
                 if (i === 0) {
                     canvasCtx.moveTo(x, y);
