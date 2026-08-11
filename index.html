@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* PRECISION BPM-SYNCED WAVELENGTH VISUALIZER */
+        /* TRANSIENT GLEAM & LIGHT STREAM VISUALIZER */
         .visualizer {
             height: 160px;
             margin: 0 0 20px 0;
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // ADVANCED BPM-SYNCED WAVELENGTH ENGINE
+        // GLEAM, LIGHT STREAM & BPM-SYNCED ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -307,23 +307,21 @@
         const noteCount = 6;
         const symbols = ['♩', '♪', '♫', '♬'];
 
-        // Musical Rhythm & Transient State Variables
-        let estimatedBPM = 120; // Default fallback BPM
+        let estimatedBPM = 120;
         let beatPulse = 0;
         let lastKickEnergy = 0;
         let historyBuffer = new Array(30).fill(0);
         let historyIndex = 0;
         let lastBeatTime = 0;
+        let streamProgress = 0; // Light stream particle runner position
 
         function initNotes(width) {
             notes.length = 0;
-            // Distribute notes evenly across canvas width for rhythmic spacing
             for (let i = 0; i < noteCount; i++) {
                 notes.push({
                     x: (width / noteCount) * i,
                     symbol: symbols[Math.floor(Math.random() * symbols.length)],
-                    size: 18,
-                    rhythmicOffset: i / noteCount
+                    size: 18
                 });
             }
         }
@@ -349,7 +347,7 @@
             analyser = audioContext.createAnalyser();
 
             analyser.fftSize = 256;
-            analyser.smoothingTimeConstant = 0.3; // Responsive smoothing for fast kicks
+            analyser.smoothingTimeConstant = 0.3;
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
@@ -368,7 +366,7 @@
             const height = rect.height;
 
             // Phosphor display trail
-            canvasCtx.fillStyle = 'rgba(5, 8, 5, 0.4)';
+            canvasCtx.fillStyle = 'rgba(5, 8, 5, 0.38)';
             canvasCtx.fillRect(0, 0, width, height);
 
             const bufferLength = analyser ? analyser.frequencyBinCount : 64;
@@ -378,7 +376,6 @@
             if (analyser && !audioEl.paused) {
                 analyser.getByteFrequencyData(dataArray);
 
-                // Isolate sub-bass and kick frequencies (bins 1 to 4 correspond to ~20Hz - 170Hz)
                 let subSum = 0;
                 let subCount = 4;
                 for (let i = 1; i <= subCount; i++) {
@@ -387,7 +384,7 @@
                 kickEnergy = subSum / subCount / 255;
             }
 
-            // Advanced Moving-Average Adaptive Transient / Beat Detector
+            // Beat Detector
             let historySum = historyBuffer.reduce((a, b) => a + b, 0);
             let localAverage = historySum / historyBuffer.length;
             
@@ -401,43 +398,64 @@
                 let now = performance.now();
                 if (lastBeatTime > 0) {
                     let deltaMs = now - lastBeatTime;
-                    if (deltaMs > 250 && deltaMs < 1000) { // Valid BPM window (60 - 240 BPM)
+                    if (deltaMs > 250 && deltaMs < 1000) {
                         let instantaneousBPM = 60000 / deltaMs;
-                        // Smoothly adjust estimated BPM
                         estimatedBPM = estimatedBPM * 0.85 + instantaneousBPM * 0.15;
                     }
                 }
                 lastBeatTime = now;
-                beatPulse = 1.0; // Trigger sharp rhythmic pulse
+                beatPulse = 1.0;
             }
             lastKickEnergy = kickEnergy;
-            beatPulse *= 0.85; // Natural decay curve
+            beatPulse *= 0.85;
 
             const centerY = height / 2;
-
-            // Draw clean wavelength reacting to kick energy
-            canvasCtx.strokeStyle = `rgba(76, 209, 55, ${0.3 + kickEnergy * 0.5})`;
-            canvasCtx.lineWidth = 2;
-            canvasCtx.beginPath();
-            
             const wavelengthFrequency = 0.015;
             const waveAmplitude = 20 + kickEnergy * 30;
             const time = Date.now() * 0.003;
 
+            // ==========================================
+            // INTENSIFIED BLOOM & WAVELENGTH RENDERING
+            // ==========================================
+            canvasCtx.save();
+            canvasCtx.shadowBlur = beatPulse > 0.4 ? 25 + (beatPulse * 25) : 10;
+            canvasCtx.shadowColor = beatPulse > 0.8 ? '#ffffff' : '#4cd137';
+            canvasCtx.strokeStyle = beatPulse > 0.8 ? '#ffffff' : `rgba(76, 209, 55, ${0.4 + kickEnergy * 0.6})`;
+            canvasCtx.lineWidth = 2 + (beatPulse * 2.5);
+            
+            canvasCtx.beginPath();
             for (let x = 0; x < width; x += 2) {
                 const y = centerY + Math.sin(x * wavelengthFrequency + time) * waveAmplitude;
                 if (x === 0) canvasCtx.moveTo(x, y);
                 else canvasCtx.lineTo(x, y);
             }
             canvasCtx.stroke();
+            canvasCtx.restore();
 
-            // Precise BPM-Synced Note Velocity Calculation
-            // Pixels per second calculation based on exact BPM (crossing canvas width per beat/measure)
-            let pixelsPerSecond = (width / 4) * (estimatedBPM / 60); 
-            let deltaTime = 0.016; // Standard approx frame time; handled smoothly via requestAnimationFrame delta if needed
+            // ==========================================
+            // LIGHT STREAM / TRACER BEAM EFFECT
+            // ==========================================
+            streamProgress += (2.5 + (kickEnergy * 4.0));
+            if (streamProgress > width) streamProgress = 0;
+
+            const streamY = centerY + Math.sin(streamProgress * wavelengthFrequency + time) * waveAmplitude;
+            canvasCtx.save();
+            const grad = canvasCtx.createRadialGradient(streamProgress, streamY, 2, streamProgress, streamY, 45);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+            grad.addColorStop(0.3, 'rgba(76, 209, 55, 0.6)');
+            grad.addColorStop(1, 'rgba(5, 8, 5, 0)');
+            canvasCtx.fillStyle = grad;
+            canvasCtx.beginPath();
+            canvasCtx.arc(streamProgress, streamY, 45, 0, Math.PI * 2);
+            canvasCtx.fill();
+            canvasCtx.restore();
+
+            // ==========================================
+            // MUSICAL NOTES WITH TRANSIENT GLEAM & FLARES
+            // ==========================================
+            let pixelsPerSecond = (width / 4) * (estimatedBPM / 60);
 
             notes.forEach((note) => {
-                // Advance note position directly tied to estimated BPM tempo
                 let speedMultiplier = 1.0 + (beatPulse * 1.2);
                 note.x += (pixelsPerSecond * 0.016) * speedMultiplier;
 
@@ -445,16 +463,41 @@
                     note.x = -20;
                 }
 
-                // Snap vertical coordinate strictly to the wavelength function
                 const y = centerY + Math.sin(note.x * wavelengthFrequency + time) * waveAmplitude;
 
+                // Radial Starburst Flares on Strong Transients (beatPulse > 0.8)
+                if (beatPulse > 0.8) {
+                    canvasCtx.save();
+                    canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+                    canvasCtx.lineWidth = 1.5;
+                    const flareLen = 18 + (beatPulse * 14);
+                    
+                    // Horizontal/Vertical cross flare rays
+                    canvasCtx.beginPath();
+                    canvasCtx.moveTo(note.x - flareLen, y); canvasCtx.lineTo(note.x + flareLen, y);
+                    canvasCtx.moveTo(note.x, y - flareLen); canvasCtx.lineTo(note.x, y + flareLen);
+                    // Diagonal flare rays
+                    canvasCtx.moveTo(note.x - flareLen*0.7, y - flareLen*0.7); canvasCtx.lineTo(note.x + flareLen*0.7, y + flareLen*0.7);
+                    canvasCtx.moveTo(note.x - flareLen*0.7, y + flareLen*0.7); canvasCtx.lineTo(note.x + flareLen*0.7, y - flareLen*0.7);
+                    canvasCtx.stroke();
+
+                    // Bright radial bloom disc behind note
+                    const noteGlow = canvasCtx.createRadialGradient(note.x, y, 2, note.x, y, 30);
+                    noteGlow.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                    noteGlow.addColorStop(1, 'rgba(76, 209, 55, 0)');
+                    canvasCtx.fillStyle = noteGlow;
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(note.x, y, 30, 0, Math.PI * 2);
+                    canvasCtx.fill();
+                    canvasCtx.restore();
+                }
+
                 canvasCtx.save();
-                // Pulse scale tied directly to beatPulse trigger
-                const currentSize = note.size + (beatPulse * 8);
+                const currentSize = note.size + (beatPulse * 10);
                 canvasCtx.font = `${Math.floor(currentSize)}px sans-serif`;
-                canvasCtx.fillStyle = '#4cd137';
-                canvasCtx.shadowBlur = 8 + beatPulse * 14;
-                canvasCtx.shadowColor = '#4cd137';
+                canvasCtx.fillStyle = beatPulse > 0.8 ? '#ffffff' : '#4cd137';
+                canvasCtx.shadowBlur = beatPulse > 0.8 ? 30 : 12 + beatPulse * 12;
+                canvasCtx.shadowColor = beatPulse > 0.8 ? '#ffffff' : '#4cd137';
                 canvasCtx.textAlign = 'center';
                 canvasCtx.textBaseline = 'middle';
                 canvasCtx.fillText(note.symbol, note.x, y);
