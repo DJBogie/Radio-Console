@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* MAGNIFIED DENSE OSCILLOSCOPE WITH MOVING BACKGROUND */
+        /* MAGNIFIED DENSE OSCILLOSCOPE WITH DRIFTING PARTICLES BACKGROUND */
         .visualizer {
             height: 240px;
             margin: 0 0 20px 0;
@@ -228,7 +228,7 @@
             width: 100%;
             height: 100%;
             position: relative;
-            z-index: 2; /* Keeps the waveform sharp on top */
+            z-index: 2;
         }
     </style>
 </head>
@@ -297,7 +297,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // DENSE OSCILLOSCOPE + SCROLLING BACKGROUND ENGINE
+        // DENSE OSCILLOSCOPE + DRIFTING PARTICLES ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -364,7 +364,7 @@
             canvasCtx.fillStyle = '#000000';
             canvasCtx.fillRect(0, 0, width, height);
 
-            // 1. DRAW MOVING BACKGROUND (Subtle drifting grid/particles behind the waveform)
+            // 1. DRAW MOVING BACKGROUND PARTICLES ONLY (Sweeping bar removed)
             canvasCtx.save();
             particles.forEach(p => {
                 p.x -= p.speed; // Move left to simulate feed motion
@@ -373,15 +373,6 @@
                 canvasCtx.fillStyle = `rgba(100, 150, 255, ${p.opacity})`;
                 canvasCtx.fillRect(p.x, p.y, p.size * 2, p.size);
             });
-
-            // Draw a subtle sweeping vertical radar line in the background
-            const sweepX = (Date.now() * 0.05) % width;
-            canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-            canvasCtx.lineWidth = 20;
-            canvasCtx.beginPath();
-            canvasCtx.moveTo(sweepX, 0);
-            canvasCtx.lineTo(sweepX, height);
-            canvasCtx.stroke();
             canvasCtx.restore();
 
             // 2. DRAW MAGNIFIED OSCILLOSCOPE WAVEFORM
