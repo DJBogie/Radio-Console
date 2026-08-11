@@ -210,15 +210,15 @@
             letter-spacing: 2px;
         }
 
-        /* UPDATED OSCILLOSCOPE / AUDIO WAVEFORM VISUALIZER */
+        /* MULTI-LAYERED DOTTED WAVE MESH VISUALIZER */
         .visualizer {
             height: 160px;
             margin: 0 0 20px 0;
             padding: 8px;
-            background: #fdfbf7; /* Off-white paper background matching the reference image */
+            background: #050308;
             border: 2px solid #251a30;
             border-radius: 4px;
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.1);
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
         }
 
         #visualizerCanvas {
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // DENSE OSCILLOSCOPE TIME-DOMAIN WAVEFORM ENGINE
+        // MULTI-LAYERED DOTTED WAVE MESH ENGINE (INVERTED)
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -302,6 +302,21 @@
         let analyser = null;
         let sourceNode = null;
         let visualizerStarted = false;
+
+        let estimatedBPM = 120;
+        let beatPulse = 0;
+        let lastKickEnergy = 0;
+        let historyBuffer = new Array(30).fill(0);
+        let historyIndex = 0;
+        let lastBeatTime = 0;
+
+        // Inverted depth layers (front-to-back perspective swapped)
+        const waveLayers = [
+            { zIndex: 3, opacity: 1.00, frequency: 0.022, speed: 0.005, dotSpacing: 8,  baseAmplitude: 38 },
+            { zIndex: 2, opacity: 0.85, frequency: 0.018, speed: 0.004, dotSpacing: 10, baseAmplitude: 30 },
+            { zIndex: 1, opacity: 0.60, frequency: 0.015, speed: 0.003, dotSpacing: 12, baseAmplitude: 22 },
+            { zIndex: 0, opacity: 0.35, frequency: 0.012, speed: 0.002, dotSpacing: 14, baseAmplitude: 15 }
+        ];
 
         function resizeVisualizer() {
             const rect = canvas.getBoundingClientRect();
@@ -319,7 +334,8 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
 
-            analyser.fftSize = 2048; // High resolution for dense vertical line spectrum
+            analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.3;
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
@@ -337,43 +353,90 @@
             const width = rect.width;
             const height = rect.height;
 
-            // Clear background with off-white paper tone
-            canvasCtx.fillStyle = '#fdfbf7';
+            canvasCtx.fillStyle = 'rgba(5, 3, 8, 0.45)';
             canvasCtx.fillRect(0, 0, width, height);
 
-            const bufferLength = analyser ? analyser.frequencyBinCount : 1024;
+            const bufferLength = analyser ? analyser.frequencyBinCount : 64;
             const dataArray = new Uint8Array(bufferLength);
+            let kickEnergy = 0;
 
             if (analyser && !audioEl.paused) {
-                analyser.getByteTimeDomainData(dataArray);
-            } else {
-                // Flat line simulation when paused or on standby
-                dataArray.fill(128);
+                analyser.getByteFrequencyData(dataArray);
+
+                let subSum = 0;
+                let subCount = 4;
+                for (let i = 1; i <= subCount; i++) {
+                    subSum += dataArray[i];
+                }
+                kickEnergy = subSum / subCount / 255;
             }
+
+            let historySum = historyBuffer.reduce((a, b) => a + b, 0);
+            let localAverage = historySum / historyBuffer.length;
+            
+            historyBuffer[historyIndex] = kickEnergy;
+            historyIndex = (historyIndex + 1) % historyBuffer.length;
+
+            let transientThreshold = localAverage * 1.35;
+            let isBeat = (kickEnergy > transientThreshold) && (kickEnergy > 0.25) && (kickEnergy > lastKickEnergy);
+
+            if (isBeat) {
+                let now = performance.now();
+                if (lastBeatTime > 0) {
+                    let deltaMs = now - lastBeatTime;
+                    if (deltaMs > 250 && deltaMs < 1000) {
+                        let instantaneousBPM = 60000 / deltaMs;
+                        estimatedBPM = estimatedBPM * 0.85 + instantaneousBPM * 0.15;
+                    }
+                }
+                lastBeatTime = now;
+                beatPulse = 1.0;
+            }
+            lastKickEnergy = kickEnergy;
+            beatPulse *= 0.85;
 
             const centerY = height / 2;
-            canvasCtx.lineWidth = 1;
-            canvasCtx.strokeStyle = '#111111'; // Dense black ink lines matching reference
 
-            canvasCtx.beginPath();
-            
-            const sliceWidth = width / bufferLength;
-            let x = 0;
+            // Render inverted multi-layered dotted wave mesh
+            waveLayers.sort((a, b) => a.zIndex - b.zIndex).forEach((layer) => {
+                canvasCtx.save();
+                
+                const waveAmplitude = layer.baseAmplitude + (kickEnergy * 35) + (beatPulse * 15);
+                const time = Date.now() * layer.speed;
+                const verticalOffsetMap = -(layer.zIndex - 1.5) * 12; // Inverted vertical depth offset
 
-            for (let i = 0; i < bufferLength; i++) {
-                // Normalize byte data (0 to 255) to a -1 to 1 range, inverted vertically
-                const v = (dataArray[i] / 128.0) - 1.0;
-                const y = centerY + (v * (height * 0.45));
+                for (let x = 0; x < width; x += layer.dotSpacing) {
+                    const waveVal = -Math.sin(x * layer.frequency + time); // Inverted sine phase
+                    const y = centerY + verticalOffsetMap + (waveVal * waveAmplitude);
 
-                if (i === 0) {
-                    canvasCtx.moveTo(x, y);
-                } else {
-                    canvasCtx.lineTo(x, y);
+                    let normalizedHeight = (waveVal + 1) / 2;
+
+                    // Inverted color gradient mapping
+                    let red = Math.floor(235 - normalizedHeight * 115);
+                    let green = Math.floor(50 + normalizedHeight * 30);
+                    let blue = Math.floor(160 + normalizedHeight * 80);
+
+                    let dotAlpha = layer.opacity * (0.5 + (normalizedHeight * 0.5) + (kickEnergy * 0.3));
+                    if (dotAlpha > 1) dotAlpha = 1;
+
+                    canvasCtx.fillStyle = `rgba(${red}, ${green}, ${blue}, ${dotAlpha})`;
+
+                    if (layer.zIndex === waveLayers[waveLayers.length - 1].zIndex) {
+                        canvasCtx.shadowBlur = beatPulse > 0.4 ? 14 + (beatPulse * 16) : 6;
+                        canvasCtx.shadowColor = `rgba(${red}, ${green}, ${blue}, 0.9)`;
+                    } else {
+                        canvasCtx.shadowBlur = 0;
+                    }
+
+                    let dotRadius = 1.5 + (layer.zIndex * 0.5) + (kickEnergy * 1.5) + (beatPulse * 1.0);
+
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(x, y, Math.max(1, dotRadius), 0, Math.PI * 2);
+                    canvasCtx.fill();
                 }
-                x += sliceWidth;
-            }
 
-            canvasCtx.stroke();
+                canvasCtx.restore();
+            });
         }
 
         window.addEventListener('resize', resizeVisualizer);
