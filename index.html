@@ -210,15 +210,15 @@
             letter-spacing: 2px;
         }
 
-        /* UPDATED OSCILLOSCOPE / AUDIO WAVEFORM VISUALIZER */
+        /* DENSE OSCILLOSCOPE AUDIO WAVEFORM VISUALIZER */
         .visualizer {
             height: 160px;
             margin: 0 0 20px 0;
             padding: 8px;
-            background: #fdfbf7; /* Off-white paper background matching the reference image */
-            border: 2px solid #251a30;
+            background: #000000;
+            border: 2px solid #1c182b;
             border-radius: 4px;
-            box-shadow: inset 0 0 15px rgba(0,0,0,0.1);
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
         }
 
         #visualizerCanvas {
@@ -319,7 +319,8 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
 
-            analyser.fftSize = 2048; // High resolution for dense vertical line spectrum
+            analyser.fftSize = 2048; // High resolution for dense vertical spikes
+            analyser.smoothingTimeConstant = 0.3;
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
@@ -337,8 +338,8 @@
             const width = rect.width;
             const height = rect.height;
 
-            // Clear background with off-white paper tone
-            canvasCtx.fillStyle = '#fdfbf7';
+            // Pure black background matching the target aesthetic
+            canvasCtx.fillStyle = '#000000';
             canvasCtx.fillRect(0, 0, width, height);
 
             const bufferLength = analyser ? analyser.frequencyBinCount : 1024;
@@ -351,27 +352,23 @@
                 dataArray.fill(128);
             }
 
-            const centerY = height / 2;
             canvasCtx.lineWidth = 1;
-            canvasCtx.strokeStyle = '#111111'; // Dense black ink lines matching reference
-
+            canvasCtx.strokeStyle = '#ffffff';
             canvasCtx.beginPath();
-            
+
             const sliceWidth = width / bufferLength;
             let x = 0;
 
             for (let i = 0; i < bufferLength; i++) {
-                // Normalize byte data (0 to 255) to a -1 to 1 range
-                const v = (dataArray[i] / 128.0) - 1.0;
-                
-                // INVERTED: Subtraction flips the wave vertically
-                const y = centerY - (v * (height * 0.45));
+                const v = dataArray[i] / 128.0; // Normalized around 1.0
+                const y = v * (height / 2);
 
                 if (i === 0) {
                     canvasCtx.moveTo(x, y);
                 } else {
                     canvasCtx.lineTo(x, y);
                 }
+
                 x += sliceWidth;
             }
 
