@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* WALTZING STICKMEN IN TUTUS VISUALIZER */
+        /* CARTWHEELING STICKMAN VISUALIZER */
         .visualizer {
             height: 160px;
             margin: 0 0 20px 0;
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // WALTZING STICKMEN RICOCHET ENGINE
+        // SINGLE CARTWHEELING STICKMAN ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -303,22 +303,14 @@
         let sourceNode = null;
         let visualizerStarted = false;
 
-        const waltzers = [];
-        const waltzerCount = 4;
-
-        function initWaltzers(width, height) {
-            waltzers.length = 0;
-            for (let i = 0; i < waltzerCount; i++) {
-                waltzers.push({
-                    x: 50 + Math.random() * (width - 100),
-                    y: 40 + Math.random() * (height - 80),
-                    vx: (Math.random() > 0.5 ? 1 : -1) * (1.5 + Math.random() * 1.0),
-                    vy: (Math.random() > 0.5 ? 1 : -1) * (1.2 + Math.random() * 0.8),
-                    spinSpeed: 4 + Math.random() * 3,
-                    phase: i * 1.5
-                });
-            }
-        }
+        const stickman = {
+            x: 100,
+            y: 80,
+            vx: 2.8,
+            vy: 2.2,
+            rotation: 0,
+            spinRate: 0.08
+        };
 
         function resizeVisualizer() {
             const rect = canvas.getBoundingClientRect();
@@ -328,10 +320,6 @@
             canvas.height = Math.max(1, Math.floor(rect.height * dpr));
 
             canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-            if (waltzers.length === 0) {
-                initWaltzers(rect.width, rect.height);
-            }
         }
 
         function setupVisualizer() {
@@ -341,7 +329,7 @@
             analyser = audioContext.createAnalyser();
 
             analyser.fftSize = 64;
-            analyser.smoothingTimeConstant = 0.6;
+            analyser.smoothingTimeConstant = 0.5;
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
@@ -359,8 +347,8 @@
             const width = rect.width;
             const height = rect.height;
 
-            // Phosphor fade trail for graceful waltz motion blur
-            canvasCtx.fillStyle = 'rgba(5, 8, 5, 0.3)';
+            // Phosphor fade trail for motion blur effect
+            canvasCtx.fillStyle = 'rgba(5, 8, 5, 0.35)';
             canvasCtx.fillRect(0, 0, width, height);
 
             const bufferLength = analyser ? analyser.frequencyBinCount : 16;
@@ -376,78 +364,62 @@
                 audioEnergy = sum / bufferLength / 255;
             }
 
-            const time = Date.now() * 0.003;
+            const speedBoost = 1.0 + (audioEnergy * 2.0);
 
-            waltzers.forEach((w, i) => {
-                const freqVal = analyser && !audioEl.paused ? (dataArray[i % bufferLength] / 255) : 0.2;
-                const speedBoost = 1.0 + (audioEnergy * 1.5) + (freqVal * 0.8);
+            // Update position with ricochet bouncing off frame borders
+            stickman.x += stickman.vx * speedBoost;
+            stickman.y += stickman.vy * speedBoost;
 
-                // Update position with ricochet bouncing off frame borders
-                w.x += w.vx * speedBoost;
-                w.y += w.vy * speedBoost;
+            const margin = 24;
+            if (stickman.x < margin) { stickman.x = margin; stickman.vx *= -1; stickman.spinRate *= -1; }
+            if (stickman.x > width - margin) { stickman.x = width - margin; stickman.vx *= -1; stickman.spinRate *= -1; }
+            if (stickman.y < margin + 10) { stickman.y = margin + 10; stickman.vy *= -1; stickman.spinRate *= -1; }
+            if (stickman.y > height - margin) { stickman.y = height - margin; stickman.vy *= -1; stickman.spinRate *= -1; }
 
-                const margin = 25;
-                if (w.x < margin) { w.x = margin; w.vx *= -1; }
-                if (w.x > width - margin) { w.x = width - margin; w.vx *= -1; }
-                if (w.y < margin + 10) { w.y = margin + 10; w.vy *= -1; }
-                if (w.y > height - margin) { w.y = height - margin; w.vy *= -1; }
+            // Continuous cartwheel rotation driven by spin rate & audio intensity
+            stickman.rotation += stickman.spinRate * (1.0 + audioEnergy * 2.5);
 
-                // Waltz 3/4 time sway & rotation
-                const waltzSway = Math.sin(time * 4 + w.phase) * 0.35;
+            canvasCtx.save();
+            canvasCtx.translate(stickman.x, stickman.y);
+            canvasCtx.rotate(stickman.rotation);
 
-                canvasCtx.save();
-                canvasCtx.translate(w.x, w.y);
-                canvasCtx.rotate(waltzSway);
+            canvasCtx.strokeStyle = '#4cd137';
+            canvasCtx.fillStyle = '#4cd137';
+            canvasCtx.lineWidth = 2;
+            canvasCtx.shadowBlur = 12;
+            canvasCtx.shadowColor = '#4cd137';
 
-                canvasCtx.strokeStyle = '#4cd137';
-                canvasCtx.fillStyle = '#4cd137';
-                canvasCtx.lineWidth = 1.8;
-                canvasCtx.shadowBlur = 10;
-                canvasCtx.shadowColor = '#4cd137';
+            // Head
+            canvasCtx.beginPath();
+            canvasCtx.arc(0, -26, 6, 0, Math.PI * 2);
+            canvasCtx.stroke();
 
-                // Head
-                canvasCtx.beginPath();
-                canvasCtx.arc(0, -32, 6, 0, Math.PI * 2);
-                canvasCtx.stroke();
+            // Torso
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, -20);
+            canvasCtx.lineTo(0, 2);
+            canvasCtx.stroke();
 
-                // Torso
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(0, -26);
-                canvasCtx.lineTo(0, -5);
-                canvasCtx.stroke();
+            // Arms (cartwheeling spread)
+            const time = Date.now() * 0.005;
+            const armSpread = Math.sin(time * 8) * 8;
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, -12);
+            canvasCtx.lineTo(-20 - armSpread, -12);
+            canvasCtx.moveTo(0, -12);
+            canvasCtx.lineTo(20 + armSpread, -12);
+            canvasCtx.stroke();
 
-                // Tutu (Fluffy glowing skirt that puffs with audio energy)
-                canvasCtx.save();
-                canvasCtx.fillStyle = 'rgba(76, 209, 55, 0.3)';
-                canvasCtx.strokeStyle = '#baffb2';
-                canvasCtx.lineWidth = 1.5;
-                canvasCtx.beginPath();
-                const tutuRadius = 20 + (audioEnergy * 10);
-                canvasCtx.ellipse(0, -12, tutuRadius, 7, 0, 0, Math.PI * 2);
-                canvasCtx.fill();
-                canvasCtx.stroke();
-                canvasCtx.restore();
+            // Legs (cartwheeling splits)
+            const legSpread = Math.cos(time * 8) * 8;
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, 2);
+            canvasCtx.lineTo(-16 - legSpread, 18);
+            canvasCtx.moveTo(0, 2);
+            canvasCtx.lineTo(16 + legSpread, 18);
+            canvasCtx.stroke();
 
-                // Arms (Graceful ballet port de bras)
-                const armWave = Math.cos(time * 4 + w.phase) * 8;
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(0, -20);
-                canvasCtx.lineTo(-16, -24 + armWave);
-                canvasCtx.moveTo(0, -20);
-                canvasCtx.lineTo(16, -24 - armWave);
-                canvasCtx.stroke();
-
-                // Legs (Waltz step posture)
-                const legCross = Math.sin(time * 4 + w.phase) * 8;
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(0, -5);
-                canvasCtx.lineTo(-8 + legCross, 12);
-                canvasCtx.moveTo(0, -5);
-                canvasCtx.lineTo(8 - legCross, 12);
-                canvasCtx.stroke();
-
-                canvasCtx.restore();
-            });
+            canvasCtx.restore();
         }
 
         window.addEventListener('resize', resizeVisualizer);
