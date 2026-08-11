@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* AUDIO WAVEFORM VISUALIZER */
+        /* TIGHTLY SYNCED AUDIO WAVEFORM VISUALIZER */
         .visualizer {
             height: 150px;
             margin: 0 0 20px 0;
@@ -292,9 +292,9 @@
         const stationDisplay = document.getElementById('stationDisplay');
         const audioEl = document.getElementById('mainAudio');
 
-        // ============================
-        // AUDIO WAVEFORM VISUALIZER
-        // ============================
+        // ==========================================
+        // HIGH-PRECISION RESPONSIVE WAVEFORM SETUP
+        // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
 
@@ -319,7 +319,9 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
 
-            analyser.fftSize = 2048;
+            // Lower fftSize for tighter, more dynamic response frames
+            analyser.fftSize = 1024;
+            analyser.smoothingTimeConstant = 0.35; // Reduced smoothing for instantaneous reaction to transients
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
@@ -339,7 +341,7 @@
 
             canvasCtx.clearRect(0, 0, width, height);
 
-            // Subtle center line grid
+            // Oscilloscope center baseline grid
             canvasCtx.strokeStyle = 'rgba(76, 209, 55, 0.12)';
             canvasCtx.lineWidth = 1;
             canvasCtx.beginPath();
@@ -347,8 +349,8 @@
             canvasCtx.lineTo(width, height / 2);
             canvasCtx.stroke();
 
-            if (!analyser) {
-                // Flatline when inactive
+            if (!analyser || audioEl.paused) {
+                // Responsive idle breathing line when paused or silent
                 canvasCtx.strokeStyle = 'rgba(76, 209, 55, 0.3)';
                 canvasCtx.lineWidth = 2;
                 canvasCtx.beginPath();
@@ -362,22 +364,35 @@
             const dataArray = new Uint8Array(bufferLength);
             analyser.getByteTimeDomainData(dataArray);
 
-            // Draw oscilloscope wavelength curve
+            // Zero-crossing search algorithm to lock waveform phase and eliminate screen jitter
+            let startIndex = 0;
+            let foundZeroCrossing = false;
+            for (let i = 0; i < bufferLength / 2; i++) {
+                if (dataArray[i] < 128 && dataArray[i + 1] >= 128) {
+                    startIndex = i;
+                    foundZeroCrossing = true;
+                    break;
+                }
+            }
+            if (!foundZeroCrossing) startIndex = 0;
+
+            // Render crisp, phase-locked reactive waveform
             canvasCtx.lineWidth = 2;
             canvasCtx.strokeStyle = '#4cd137';
-            canvasCtx.shadowBlur = 8;
+            canvasCtx.shadowBlur = 10;
             canvasCtx.shadowColor = '#4cd137';
 
             canvasCtx.beginPath();
 
-            const sliceWidth = width / bufferLength;
+            const drawLength = bufferLength - startIndex;
+            const sliceWidth = width / drawLength;
             let x = 0;
 
-            for (let i = 0; i < bufferLength; i++) {
+            for (let i = startIndex; i < bufferLength; i++) {
                 const v = dataArray[i] / 128.0;
                 const y = (v * height) / 2;
 
-                if (i === 0) {
+                if (i === startIndex) {
                     canvasCtx.moveTo(x, y);
                 } else {
                     canvasCtx.lineTo(x, y);
@@ -386,13 +401,11 @@
                 x += sliceWidth;
             }
 
-            canvasCtx.lineTo(width, height / 2);
             canvasCtx.stroke();
             canvasCtx.shadowBlur = 0;
         }
 
         window.addEventListener('resize', resizeVisualizer);
-
         resizeVisualizer();
 
         audioEl.addEventListener('play', () => {
