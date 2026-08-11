@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* BOUNCING BALLS VISUALIZER */
+        /* AUDIO WAVEFORM VISUALIZER */
         .visualizer {
             height: 150px;
             margin: 0 0 20px 0;
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ============================
-        // BOUNCING BALLS VISUALIZER
+        // AUDIO WAVEFORM VISUALIZER
         // ============================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -302,27 +302,6 @@
         let analyser = null;
         let sourceNode = null;
         let visualizerStarted = false;
-
-        const ballCount = 36;
-        const balls = [];
-
-        for (let i = 0; i < ballCount; i++) {
-            balls.push({
-                x: 0,
-                y: 0,
-                vy: 0,
-                radius: 5,
-                color: getPaletteColor(i / ballCount)
-            });
-        }
-
-        function getPaletteColor(progress) {
-            if (progress < 0.2) return '#ff3366';
-            if (progress < 0.4) return '#ffaa33';
-            if (progress < 0.6) return '#4cd137';
-            if (progress < 0.8) return '#00d2d3';
-            return '#5f27cd';
-        }
 
         function resizeVisualizer() {
             const rect = canvas.getBoundingClientRect();
@@ -340,8 +319,7 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
 
-            analyser.fftSize = 128;
-            analyser.smoothingTimeConstant = 0.8;
+            analyser.fftSize = 2048;
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
@@ -361,60 +339,56 @@
 
             canvasCtx.clearRect(0, 0, width, height);
 
-            // Floor baseline
-            canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            // Subtle center line grid
+            canvasCtx.strokeStyle = 'rgba(76, 209, 55, 0.12)';
             canvasCtx.lineWidth = 1;
             canvasCtx.beginPath();
-            canvasCtx.moveTo(0, height - 10);
-            canvasCtx.lineTo(width, height - 10);
+            canvasCtx.moveTo(0, height / 2);
+            canvasCtx.lineTo(width, height / 2);
             canvasCtx.stroke();
 
-            const bufferLength = analyser ? analyser.frequencyBinCount : ballCount;
-            const dataArray = new Uint8Array(bufferLength);
-            if (analyser) {
-                analyser.getByteFrequencyData(dataArray);
-            }
-
-            const spacing = width / (ballCount + 1);
-
-            for (let i = 0; i < ballCount; i++) {
-                const ball = balls[i];
-                ball.x = spacing * (i + 1);
-
-                const freqValue = analyser ? (dataArray[i % bufferLength] / 255) : 0;
-                const floorY = height - 15 - ball.radius;
-
-                // Apply audio impulse or gravity
-                if (freqValue > 0.1) {
-                    ball.vy -= freqValue * 0.8; // Impel upwards based on audio
-                } else {
-                    ball.vy += 0.25; // Gravity
-                }
-
-                ball.y += ball.vy;
-
-                // Floor collision
-                if (ball.y > floorY) {
-                    ball.y = floorY;
-                    ball.vy = -ball.vy * 0.4; // Bounce damping
-                }
-
-                // Ceiling boundary
-                if (ball.y < ball.radius) {
-                    ball.y = ball.radius;
-                    ball.vy = 0;
-                }
-
-                // Draw ball with glow
-                canvasCtx.save();
-                canvasCtx.shadowBlur = 8;
-                canvasCtx.shadowColor = ball.color;
-                canvasCtx.fillStyle = ball.color;
+            if (!analyser) {
+                // Flatline when inactive
+                canvasCtx.strokeStyle = 'rgba(76, 209, 55, 0.3)';
+                canvasCtx.lineWidth = 2;
                 canvasCtx.beginPath();
-                canvasCtx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-                canvasCtx.fill();
-                canvasCtx.restore();
+                canvasCtx.moveTo(0, height / 2);
+                canvasCtx.lineTo(width, height / 2);
+                canvasCtx.stroke();
+                return;
             }
+
+            const bufferLength = analyser.fftSize;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteTimeDomainData(dataArray);
+
+            // Draw oscilloscope wavelength curve
+            canvasCtx.lineWidth = 2;
+            canvasCtx.strokeStyle = '#4cd137';
+            canvasCtx.shadowBlur = 8;
+            canvasCtx.shadowColor = '#4cd137';
+
+            canvasCtx.beginPath();
+
+            const sliceWidth = width / bufferLength;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = (v * height) / 2;
+
+                if (i === 0) {
+                    canvasCtx.moveTo(x, y);
+                } else {
+                    canvasCtx.lineTo(x, y);
+                }
+
+                x += sliceWidth;
+            }
+
+            canvasCtx.lineTo(width, height / 2);
+            canvasCtx.stroke();
+            canvasCtx.shadowBlur = 0;
         }
 
         window.addEventListener('resize', resizeVisualizer);
