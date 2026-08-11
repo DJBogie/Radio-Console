@@ -210,21 +210,25 @@
             letter-spacing: 2px;
         }
 
-        /* MAGNIFIED DENSE OSCILLOSCOPE AUDIO WAVEFORM VISUALIZER */
+        /* MAGNIFIED DENSE OSCILLOSCOPE WITH MOVING BACKGROUND */
         .visualizer {
-            height: 240px; /* Magnified height */
+            height: 240px;
             margin: 0 0 20px 0;
             padding: 8px;
             background: #000000;
             border: 2px solid #1c182b;
             border-radius: 4px;
             box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
+            position: relative;
+            overflow: hidden;
         }
 
         #visualizerCanvas {
             display: block;
             width: 100%;
             height: 100%;
+            position: relative;
+            z-index: 2; /* Keeps the waveform sharp on top */
         }
     </style>
 </head>
@@ -293,7 +297,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // MAGNIFIED DENSE OSCILLOSCOPE WAVEFORM ENGINE
+        // DENSE OSCILLOSCOPE + SCROLLING BACKGROUND ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -303,6 +307,23 @@
         let sourceNode = null;
         let visualizerStarted = false;
 
+        // Background motion particle state
+        let particles = [];
+        const numParticles = 40;
+
+        function initParticles(width, height) {
+            particles = [];
+            for (let i = 0; i < numParticles; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() * 2 + 0.5,
+                    speed: Math.random() * 0.8 + 0.2,
+                    opacity: Math.random() * 0.3 + 0.05
+                });
+            }
+        }
+
         function resizeVisualizer() {
             const rect = canvas.getBoundingClientRect();
             const dpr = window.devicePixelRatio || 1;
@@ -311,6 +332,7 @@
             canvas.height = Math.max(1, Math.floor(rect.height * dpr));
 
             canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            initParticles(rect.width, rect.height);
         }
 
         function setupVisualizer() {
@@ -338,9 +360,31 @@
             const width = rect.width;
             const height = rect.height;
 
+            // Clear background
             canvasCtx.fillStyle = '#000000';
             canvasCtx.fillRect(0, 0, width, height);
 
+            // 1. DRAW MOVING BACKGROUND (Subtle drifting grid/particles behind the waveform)
+            canvasCtx.save();
+            particles.forEach(p => {
+                p.x -= p.speed; // Move left to simulate feed motion
+                if (p.x < 0) p.x = width; // Wrap around
+
+                canvasCtx.fillStyle = `rgba(100, 150, 255, ${p.opacity})`;
+                canvasCtx.fillRect(p.x, p.y, p.size * 2, p.size);
+            });
+
+            // Draw a subtle sweeping vertical radar line in the background
+            const sweepX = (Date.now() * 0.05) % width;
+            canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            canvasCtx.lineWidth = 20;
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(sweepX, 0);
+            canvasCtx.lineTo(sweepX, height);
+            canvasCtx.stroke();
+            canvasCtx.restore();
+
+            // 2. DRAW MAGNIFIED OSCILLOSCOPE WAVEFORM
             const bufferLength = analyser ? analyser.frequencyBinCount : 1024;
             const dataArray = new Uint8Array(bufferLength);
 
@@ -350,7 +394,7 @@
                 dataArray.fill(128);
             }
 
-            canvasCtx.lineWidth = 1.5; // Slightly bolder line for the magnified view
+            canvasCtx.lineWidth = 1.5;
             canvasCtx.strokeStyle = '#ffffff';
             canvasCtx.beginPath();
 
@@ -359,7 +403,6 @@
 
             for (let i = 0; i < bufferLength; i++) {
                 const v = dataArray[i] / 128.0; 
-                // Magnified amplitude scale factor (multiplied vertical deviation from center)
                 const y = (v - 1.0) * (height * 1.5) + (height / 2);
 
                 if (i === 0) {
