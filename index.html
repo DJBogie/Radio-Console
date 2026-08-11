@@ -210,13 +210,13 @@
             letter-spacing: 2px;
         }
 
-        /* CYBERPUNK AUDIO VISUALIZER */
+        /* MULTI-LAYERED DOTTED WAVE MESH VISUALIZER */
         .visualizer {
-            height: 180px;
+            height: 160px; /* Increased height for better 3D perception */
             margin: 0 0 20px 0;
             padding: 8px;
-            background: #08080a;
-            border: 2px solid #1a1a2e;
+            background: #050308; /* Darker, deeper background */
+            border: 2px solid #251a30; /* Purple-tinted border */
             border-radius: 4px;
             box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
         }
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // CYBERPUNK AUDIO SPECTRUM ENGINE
+        // MULTI-LAYERED DOTTED WAVE MESH ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -303,32 +303,27 @@
         let sourceNode = null;
         let visualizerStarted = false;
 
-        // State variables for the complex effects
-        let beatPulse = 0;
+        // State variables for animation timing and beat detection
+        let estimatedBPM = 120;
+        let beatPulse = 0; // Scales 0 -> 1 on transients
         let lastKickEnergy = 0;
-        const historyBuffer = new Array(30).fill(0);
+        let historyBuffer = new Array(30).fill(0);
         let historyIndex = 0;
-        let hudRotation = 0;
-        const neonElements = [];
+        let lastBeatTime = 0;
 
-        function initNeonElements(width, height) {
-            neonElements.length = 0;
-            const symbols = ['♩', '♪', '♫', '♬', 'ℋ', '⚡', '∅', '⌬'];
-            for (let i = 0; i < 35; i++) {
-                neonElements.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                    type: Math.random() > 0.5 ? 'symbol' : 'orb',
-                    symbol: symbols[Math.floor(Math.random() * symbols.length)],
-                    orbRadius: 1.5 + Math.random() * 3,
-                    baseGlow: 5 + Math.random() * 10,
-                    pulseSpeed: 0.02 + Math.random() * 0.03,
-                    phase: Math.random() * Math.PI * 2,
-                    driftX: (Math.random() - 0.5) * 0.5,
-                    driftY: (Math.random() - 0.5) * 0.5
-                });
-            }
-        }
+        // Define parallel depth layers for the 3D wave mesh
+        // zIndex: depth (higher = closer, larger dots, faster movement)
+        // opacity: base transparency
+        // frequency: tightness of the sine wave
+        // speed: base animation speed
+        // dotSpacing: gap between dots (higher = lower density)
+        // baseAmplitude: starting height
+        const waveLayers = [
+            { zIndex: 0, opacity: 0.35, frequency: 0.012, speed: 0.002, dotSpacing: 14, baseAmplitude: 15 },
+            { zIndex: 1, opacity: 0.60, frequency: 0.015, speed: 0.003, dotSpacing: 12, baseAmplitude: 22 },
+            { zIndex: 2, opacity: 0.85, frequency: 0.018, speed: 0.004, dotSpacing: 10, baseAmplitude: 30 },
+            { zIndex: 3, opacity: 1.00, frequency: 0.022, speed: 0.005, dotSpacing: 8,  baseAmplitude: 38 }
+        ];
 
         function resizeVisualizer() {
             const rect = canvas.getBoundingClientRect();
@@ -337,12 +332,7 @@
             canvas.width = Math.max(1, Math.floor(rect.width * dpr));
             canvas.height = Math.max(1, Math.floor(rect.height * dpr));
 
-            // Scale context to handle HiDPI displays correctly
             canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-            if (neonElements.length === 0) {
-                initNeonElements(rect.width, rect.height);
-            }
         }
 
         function setupVisualizer() {
@@ -351,9 +341,9 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
 
-            // Configure analyser for spectrum data
-            analyser.fftSize = 512; // Higher resolution for spectrum bars
-            analyser.smoothingTimeConstant = 0.6; // Smooth transition between frames
+            // Lower FFT size for faster response to transients
+            analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.3;
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
@@ -371,47 +361,39 @@
             const width = rect.width;
             const height = rect.height;
 
-            // Apply a strong fade trail for motion blur effect
-            canvasCtx.fillStyle = 'rgba(8, 8, 10, 0.38)';
+            // Deep cosmic background trail for the mesh
+            canvasCtx.fillStyle = 'rgba(5, 3, 8, 0.45)';
             canvasCtx.fillRect(0, 0, width, height);
 
-            const bufferLength = analyser ? analyser.frequencyBinCount : 128;
+            const bufferLength = analyser ? analyser.frequencyBinCount : 64;
             const dataArray = new Uint8Array(bufferLength);
             let kickEnergy = 0;
-            let avgEnergy = 0;
 
             if (analyser && !audioEl.paused) {
                 analyser.getByteFrequencyData(dataArray);
 
-                // Calculate overall energy (average amplitude)
-                let sum = 0;
-                // Focus on a sub-bass/kick range (e.g., first 15% of bins)
-                let kickRange = Math.floor(bufferLength * 0.15);
-                for (let i = 0; i < kickRange; i++) {
-                    sum += dataArray[i];
+                // Isolate bass energy (first few bins of FFT)
+                let subSum = 0;
+                let subCount = 4; // Averaging bins 1-4 for bass
+                for (let i = 1; i <= subCount; i++) {
+                    subSum += dataArray[i];
                 }
-                kickEnergy = sum / kickRange / 255;
-
-                // Average energy across the full spectrum
-                let fullSum = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                    fullSum += dataArray[i];
-                }
-                avgEnergy = fullSum / bufferLength / 255;
+                kickEnergy = subSum / subCount / 255;
             }
 
-            // Advanced Beat Detection Algorithm
+            // --- Advanced Transient/Beat Detection ---
             let historySum = historyBuffer.reduce((a, b) => a + b, 0);
             let localAverage = historySum / historyBuffer.length;
             
             historyBuffer[historyIndex] = kickEnergy;
             historyIndex = (historyIndex + 1) % historyBuffer.length;
 
-            let transientThreshold = localAverage * 1.35; // Threshold must be significantly higher than average
-            let isBeat = (kickEnergy > transientThreshold) && (kickEnergy > 0.3) && (kickEnergy > lastKickEnergy);
+            // Detect if current energy spikes significantly above the average
+            let transientThreshold = localAverage * 1.35;
+            let isBeat = (kickEnergy > transientThreshold) && (kickEnergy > 0.25) && (kickEnergy > lastKickEnergy);
 
             if (isBeat) {
-                beatPulse = 1.0; // Full beat pulse
-            }
-            lastKickEnergy = kickEnergy;
-            beatPulse *= 0.82;
+                let now = performance.now();
+                if (lastBeatTime > 0) {
+                    let deltaMs = now - lastBeatTime;
+                    if (deltaMs > 250 && deltaMs < 1000
