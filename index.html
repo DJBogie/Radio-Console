@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* RICOCHETING AUDIO BEADS VISUALIZER */
+        /* MONOCHROME STREAKING BEADS VISUALIZER */
         .visualizer {
             height: 150px;
             margin: 0 0 20px 0;
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // RICOCHETING AUDIO BEADS PHYSICS ENGINE
+        // MONOCHROME STREAKING BEADS ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -306,8 +306,6 @@
         const beadCount = 35;
         const beads = [];
 
-        const colorPalette = ['#ff3366', '#ffaa33', '#4cd137', '#00d2d3', '#5f27cd', '#ff6b81', '#1e90ff'];
-
         function initBeads(width, height) {
             beads.length = 0;
             for (let i = 0; i < beadCount; i++) {
@@ -316,8 +314,7 @@
                     y: Math.random() * (height - 40) + 20,
                     vx: (Math.random() - 0.5) * 4,
                     vy: (Math.random() - 0.5) * 4,
-                    radius: Math.random() * 3 + 4,
-                    color: colorPalette[i % colorPalette.length]
+                    radius: Math.random() * 2 + 3.5
                 });
             }
         }
@@ -361,7 +358,9 @@
             const width = rect.width;
             const height = rect.height;
 
-            canvasCtx.clearRect(0, 0, width, height);
+            // Semi-transparent clearing to generate glowing motion blur streaks behind the beads
+            canvasCtx.fillStyle = 'rgba(5, 8, 5, 0.25)';
+            canvasCtx.fillRect(0, 0, width, height);
 
             const bufferLength = analyser ? analyser.frequencyBinCount : beadCount;
             const dataArray = new Uint8Array(bufferLength);
@@ -373,21 +372,20 @@
                 for (let i = 0; i < bufferLength; i++) {
                     sum += dataArray[i];
                 }
-                audioEnergy = sum / bufferLength / 255; // Normalized 0 to 1
+                audioEnergy = sum / bufferLength / 255;
             }
 
-            // Update and render ricocheting beads
+            // Update and render ricocheting monochrome beads
             for (let i = 0; i < beads.length; i++) {
                 const bead = beads[i];
 
-                // Modulate velocity based on audio frequency reactivity
                 const freqFactor = analyser && !audioEl.paused ? (dataArray[i % bufferLength] / 255) : 0.1;
-                let speedBoost = 1 + (freqFactor * 2.5);
+                let speedBoost = 1 + (freqFactor * 2.8);
 
                 bead.x += bead.vx * speedBoost;
                 bead.y += bead.vy * speedBoost;
 
-                // Wall ricochets (bounce off frame borders)
+                // Wall ricochets
                 if (bead.x - bead.radius < 0) {
                     bead.x = bead.radius;
                     bead.vx *= -1;
@@ -404,7 +402,7 @@
                     bead.vy *= -1;
                 }
 
-                // Inter-bead collisions (elastic ricochets between beads)
+                // Inter-bead elastic collisions
                 for (let j = i + 1; j < beads.length; j++) {
                     const other = beads[j];
                     const dx = other.x - bead.x;
@@ -413,7 +411,6 @@
                     const minDist = bead.radius + other.radius;
 
                     if (dist < minDist) {
-                        // Overlap resolution
                         const overlap = 0.5 * (minDist - dist);
                         const nx = dx / (dist || 1);
                         const ny = dy / (dist || 1);
@@ -423,7 +420,6 @@
                         other.x += nx * overlap;
                         other.y += ny * overlap;
 
-                        // Swap velocity components along normal (elastic collision)
                         const kx = bead.vx - other.vx;
                         const ky = bead.vy - other.vy;
                         const p = 2 * (nx * kx + ny * ky) / 2;
@@ -435,11 +431,11 @@
                     }
                 }
 
-                // Render glowing bead
+                // Render classic phosphor-green glowing bead with motion streak
                 canvasCtx.save();
-                canvasCtx.shadowBlur = 8 + (audioEnergy * 10);
-                canvasCtx.shadowColor = bead.color;
-                canvasCtx.fillStyle = bead.color;
+                canvasCtx.shadowBlur = 10 + (audioEnergy * 12);
+                canvasCtx.shadowColor = '#4cd137';
+                canvasCtx.fillStyle = '#baffb2';
                 canvasCtx.beginPath();
                 canvasCtx.arc(bead.x, bead.y, bead.radius, 0, Math.PI * 2);
                 canvasCtx.fill();
