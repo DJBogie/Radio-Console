@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* DANCING STICKMEN IN TUTUS VISUALIZER */
+        /* FISH <-> DUCKS MORPHING VISUALIZER */
         .visualizer {
             height: 160px;
             margin: 0 0 20px 0;
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // DANCING STICKMEN IN TUTUS ENGINE
+        // FISH-TO-DUCK MORPHING VISUALIZER ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -303,19 +303,19 @@
         let sourceNode = null;
         let visualizerStarted = false;
 
-        const dancerCount = 6;
-        const dancers = [];
+        const creatureCount = 5;
+        const creatures = [];
 
-        function initDancers(width) {
-            dancers.length = 0;
-            const spacing = width / (dancerCount + 1);
-            for (let i = 0; i < dancerCount; i++) {
-                dancers.push({
+        function initCreatures(width) {
+            creatures.length = 0;
+            const spacing = width / (creatureCount + 1);
+            for (let i = 0; i < creatureCount; i++) {
+                creatures.push({
                     x: spacing * (i + 1),
-                    baseY: 110,
-                    phase: i * 1.2,
-                    speed: 3 + Math.random() * 2,
-                    scale: 0.8 + Math.random() * 0.4
+                    baseY: 80,
+                    phase: i * 1.5,
+                    speed: 2 + Math.random() * 1.5,
+                    direction: i % 2 === 0 ? 1 : -1
                 });
             }
         }
@@ -329,8 +329,8 @@
 
             canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-            if (dancers.length === 0) {
-                initDancers(rect.width);
+            if (creatures.length === 0) {
+                initCreatures(rect.width);
             }
         }
 
@@ -341,7 +341,7 @@
             analyser = audioContext.createAnalyser();
 
             analyser.fftSize = 64;
-            analyser.smoothingTimeConstant = 0.6;
+            analyser.smoothingTimeConstant = 0.5;
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
@@ -359,7 +359,7 @@
             const width = rect.width;
             const height = rect.height;
 
-            // Clear screen with phosphor trail
+            // Phosphor fade trail
             canvasCtx.fillStyle = 'rgba(5, 8, 5, 0.35)';
             canvasCtx.fillRect(0, 0, width, height);
 
@@ -376,76 +376,77 @@
                 audioEnergy = sum / bufferLength / 255;
             }
 
-            const time = Date.now() * 0.005;
+            const time = Date.now() * 0.003;
 
-            // Draw floor line
-            canvasCtx.strokeStyle = 'rgba(76, 209, 55, 0.2)';
-            canvasCtx.lineWidth = 1;
-            canvasCtx.beginPath();
-            canvasCtx.moveTo(0, height - 15);
-            canvasCtx.lineTo(width, height - 15);
-            canvasCtx.stroke();
-
-            // Update and render dancing stickmen wearing tutus
-            dancers.forEach((d, i) => {
-                const freqVal = analyser && !audioEl.paused ? (dataArray[i % bufferLength] / 255) : 0.1;
-                const bounceHeight = 15 + (audioEnergy * 35) + (freqVal * 25);
-                const currentY = d.baseY - Math.abs(Math.sin(time * d.speed + d.phase)) * bounceHeight;
-
-                // Sway angle driven by audio
-                const sway = Math.sin(time * 2 + d.phase) * (0.2 + audioEnergy * 0.3);
+            creatures.forEach((c, i) => {
+                const freqVal = analyser && !audioEl.paused ? (dataArray[i % bufferLength] / 255) : 0.2;
+                
+                // Morph factor (0 = Fish, 1 = Duck), smoothly oscillating over time and influenced by audio
+                const morph = (Math.sin(time * c.speed + c.phase) + 1) / 2;
+                
+                // Swimming / floating motion
+                const yOffset = Math.sin(time * 3 + c.phase) * (10 + audioEnergy * 20);
+                const xPos = c.x + Math.cos(time * 1.5 + c.phase) * 15;
+                const currentY = c.baseY + yOffset;
 
                 canvasCtx.save();
-                canvasCtx.translate(d.x, currentY);
-                canvasCtx.rotate(sway);
+                canvasCtx.translate(xPos, currentY);
+                if (c.direction < 0) {
+                    canvasCtx.scale(-1, 1);
+                }
 
-                // Styling
                 canvasCtx.strokeStyle = '#4cd137';
-                canvasCtx.fillStyle = '#4cd137';
-                canvasCtx.lineWidth = 2;
-                canvasCtx.shadowBlur = 8;
+                canvasCtx.fillStyle = 'rgba(76, 209, 55, 0.15)';
+                canvasCtx.lineWidth = 1.8;
+                canvasCtx.shadowBlur = 10;
                 canvasCtx.shadowColor = '#4cd137';
 
-                // Head
+                // ESCHER-STYLE MORPHING PATH (Interpolating between Fish and Duck)
                 canvasCtx.beginPath();
-                canvasCtx.arc(0, -35, 7, 0, Math.PI * 2);
-                canvasCtx.stroke();
+                
+                if (morph < 0.5) {
+                    // FISH STATE (Tail left, head right, fin on top)
+                    const t = morph * 2; // 0 to 1
+                    canvasCtx.moveTo(-25, 0); // Tail start
+                    canvasCtx.quadraticCurveTo(-15, -12, 0, -8 * (1-t) - 10 * t); // Back curve / head start
+                    canvasCtx.quadraticCurveTo(15, -10, 22, 0); // Snout / beak
+                    canvasCtx.quadraticCurveTo(15, 10, 0, 8); // Belly
+                    canvasCtx.quadraticCurveTo(-15, 12, -25, 0); // Tail close
+                    canvasCtx.closePath();
+                    canvasCtx.fill();
+                    canvasCtx.stroke();
 
-                // Body (Torso)
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(0, -28);
-                canvasCtx.lineTo(0, -5);
-                canvasCtx.stroke();
+                    // Fin / Wing element
+                    canvasCtx.beginPath();
+                    canvasCtx.moveTo(0, -8);
+                    canvasCtx.lineTo(5, -18 - (audioEnergy * 8));
+                    canvasCtx.lineTo(10, -6);
+                    canvasCtx.stroke();
+                } else {
+                    // DUCK STATE (Body, neck curving up to bill)
+                    canvasCtx.beginPath();
+                    // Tail feathers left
+                    canvasCtx.moveTo(-22, -2);
+                    canvasCtx.quadraticCurveTo(-28, -10, -20, -12);
+                    // Back and neck up to head
+                    canvasCtx.quadraticCurveTo(-10, -15, 0, -22);
+                    // Head & bill right
+                    canvasCtx.arc(8, -24, 6, 0, Math.PI * 2);
+                    // Breast down to belly
+                    canvasCtx.quadraticCurveTo(14, -10, 16, 5);
+                    // Underbody back to tail
+                    canvasCtx.quadraticCurveTo(0, 12, -22, -2);
+                    canvasCtx.closePath();
+                    canvasCtx.fill();
+                    canvasCtx.stroke();
 
-                // Tutu (Fluffy glowing skirt made of loops/arcs)
-                canvasCtx.save();
-                canvasCtx.fillStyle = 'rgba(76, 209, 55, 0.35)';
-                canvasCtx.strokeStyle = '#baffb2';
-                canvasCtx.lineWidth = 1.5;
-                canvasCtx.beginPath();
-                const tutuWidth = 22 + (audioEnergy * 8);
-                canvasCtx.ellipse(0, -12, tutuWidth, 8, 0, 0, Math.PI * 2);
-                canvasCtx.fill();
-                canvasCtx.stroke();
-                canvasCtx.restore();
-
-                // Arms (Ballet pose moving with rhythm)
-                const armFlex = Math.cos(time * 3 + d.phase) * 10;
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(0, -22);
-                canvasCtx.lineTo(-18, -25 + armFlex);
-                canvasCtx.moveTo(0, -22);
-                canvasCtx.lineTo(18, -25 - armFlex);
-                canvasCtx.stroke();
-
-                // Legs (Dancing / Grand Jete animation)
-                const legSpread = Math.sin(time * d.speed + d.phase) * 12;
-                canvasCtx.beginPath();
-                canvasCtx.moveTo(0, -5);
-                canvasCtx.lineTo(-10 + legSpread, 15);
-                canvasCtx.moveTo(0, -5);
-                canvasCtx.lineTo(10 - legSpread, 15);
-                canvasCtx.stroke();
+                    // Wing / Flippers flapping with audio
+                    canvasCtx.beginPath();
+                    const wingFlap = Math.sin(time * 10) * 6 * audioEnergy;
+                    canvasCtx.moveTo(-5, -2);
+                    canvasCtx.quadraticCurveTo(5, 5 + wingFlap, 10, -2);
+                    canvasCtx.stroke();
+                }
 
                 canvasCtx.restore();
             });
