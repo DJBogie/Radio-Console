@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* SIMPLE WAVELENGTH & TEMPO-SYNCED NOTES VISUALIZER */
+        /* PRECISION BPM-SYNCED WAVELENGTH VISUALIZER */
         .visualizer {
             height: 160px;
             margin: 0 0 20px 0;
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // SIMPLE WAVELENGTH & TEMPO-SYNCED NOTES ENGINE
+        // ADVANCED BPM-SYNCED WAVELENGTH ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -304,21 +304,26 @@
         let visualizerStarted = false;
 
         const notes = [];
-        const noteCount = 8;
+        const noteCount = 6;
         const symbols = ['♩', '♪', '♫', '♬'];
 
+        // Musical Rhythm & Transient State Variables
+        let estimatedBPM = 120; // Default fallback BPM
         let beatPulse = 0;
-        let lastBassValue = 0;
+        let lastKickEnergy = 0;
+        let historyBuffer = new Array(30).fill(0);
+        let historyIndex = 0;
+        let lastBeatTime = 0;
 
         function initNotes(width) {
             notes.length = 0;
+            // Distribute notes evenly across canvas width for rhythmic spacing
             for (let i = 0; i < noteCount; i++) {
                 notes.push({
                     x: (width / noteCount) * i,
-                    baseSpeed: 1.5,
                     symbol: symbols[Math.floor(Math.random() * symbols.length)],
                     size: 18,
-                    phaseOffset: (Math.PI * 2 / noteCount) * i
+                    rhythmicOffset: i / noteCount
                 });
             }
         }
@@ -343,8 +348,8 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
 
-            analyser.fftSize = 128;
-            analyser.smoothingTimeConstant = 0.5;
+            analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.3; // Responsive smoothing for fast kicks
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
@@ -362,40 +367,61 @@
             const width = rect.width;
             const height = rect.height;
 
-            // Clear background with faint phosphor trail
+            // Phosphor display trail
             canvasCtx.fillStyle = 'rgba(5, 8, 5, 0.4)';
             canvasCtx.fillRect(0, 0, width, height);
 
-            const bufferLength = analyser ? analyser.frequencyBinCount : 32;
+            const bufferLength = analyser ? analyser.frequencyBinCount : 64;
             const dataArray = new Uint8Array(bufferLength);
-            let bassEnergy = 0;
+            let kickEnergy = 0;
 
             if (analyser && !audioEl.paused) {
                 analyser.getByteFrequencyData(dataArray);
 
-                let bassSum = 0;
-                for (let i = 0; i < 4; i++) {
-                    bassSum += dataArray[i];
+                // Isolate sub-bass and kick frequencies (bins 1 to 4 correspond to ~20Hz - 170Hz)
+                let subSum = 0;
+                let subCount = 4;
+                for (let i = 1; i <= subCount; i++) {
+                    subSum += dataArray[i];
                 }
-                bassEnergy = bassSum / 4 / 255;
+                kickEnergy = subSum / subCount / 255;
             }
 
-            // Beat transient detector
-            if (bassEnergy > lastBassValue + 0.10 && bassEnergy > 0.35) {
-                beatPulse = 1.0;
+            // Advanced Moving-Average Adaptive Transient / Beat Detector
+            let historySum = historyBuffer.reduce((a, b) => a + b, 0);
+            let localAverage = historySum / historyBuffer.length;
+            
+            historyBuffer[historyIndex] = kickEnergy;
+            historyIndex = (historyIndex + 1) % historyBuffer.length;
+
+            let transientThreshold = localAverage * 1.35;
+            let isBeat = (kickEnergy > transientThreshold) && (kickEnergy > 0.25) && (kickEnergy > lastKickEnergy);
+
+            if (isBeat) {
+                let now = performance.now();
+                if (lastBeatTime > 0) {
+                    let deltaMs = now - lastBeatTime;
+                    if (deltaMs > 250 && deltaMs < 1000) { // Valid BPM window (60 - 240 BPM)
+                        let instantaneousBPM = 60000 / deltaMs;
+                        // Smoothly adjust estimated BPM
+                        estimatedBPM = estimatedBPM * 0.85 + instantaneousBPM * 0.15;
+                    }
+                }
+                lastBeatTime = now;
+                beatPulse = 1.0; // Trigger sharp rhythmic pulse
             }
-            lastBassValue = bassEnergy;
-            beatPulse *= 0.88; // decay rate
+            lastKickEnergy = kickEnergy;
+            beatPulse *= 0.85; // Natural decay curve
 
             const centerY = height / 2;
 
-            // Draw a clean, simple sine wavelength across the screen
-            canvasCtx.strokeStyle = `rgba(76, 209, 55, ${0.3 + bassEnergy * 0.5})`;
+            // Draw clean wavelength reacting to kick energy
+            canvasCtx.strokeStyle = `rgba(76, 209, 55, ${0.3 + kickEnergy * 0.5})`;
             canvasCtx.lineWidth = 2;
             canvasCtx.beginPath();
             
             const wavelengthFrequency = 0.015;
-            const waveAmplitude = 22 + bassEnergy * 25;
+            const waveAmplitude = 20 + kickEnergy * 30;
             const time = Date.now() * 0.003;
 
             for (let x = 0; x < width; x += 2) {
@@ -405,23 +431,29 @@
             }
             canvasCtx.stroke();
 
-            // Update and draw musical notes gliding horizontally along the simple wavelength
+            // Precise BPM-Synced Note Velocity Calculation
+            // Pixels per second calculation based on exact BPM (crossing canvas width per beat/measure)
+            let pixelsPerSecond = (width / 4) * (estimatedBPM / 60); 
+            let deltaTime = 0.016; // Standard approx frame time; handled smoothly via requestAnimationFrame delta if needed
+
             notes.forEach((note) => {
-                const tempoMultiplier = 1.0 + (bassEnergy * 1.5) + (beatPulse * 2.0);
-                note.x += note.baseSpeed * tempoMultiplier;
+                // Advance note position directly tied to estimated BPM tempo
+                let speedMultiplier = 1.0 + (beatPulse * 1.2);
+                note.x += (pixelsPerSecond * 0.016) * speedMultiplier;
 
                 if (note.x > width + 20) {
                     note.x = -20;
                 }
 
-                // Snap the vertical position directly to the sine wavelength formula
+                // Snap vertical coordinate strictly to the wavelength function
                 const y = centerY + Math.sin(note.x * wavelengthFrequency + time) * waveAmplitude;
 
                 canvasCtx.save();
-                const currentSize = note.size + (beatPulse * 6);
+                // Pulse scale tied directly to beatPulse trigger
+                const currentSize = note.size + (beatPulse * 8);
                 canvasCtx.font = `${Math.floor(currentSize)}px sans-serif`;
                 canvasCtx.fillStyle = '#4cd137';
-                canvasCtx.shadowBlur = 10 + beatPulse * 12;
+                canvasCtx.shadowBlur = 8 + beatPulse * 14;
                 canvasCtx.shadowColor = '#4cd137';
                 canvasCtx.textAlign = 'center';
                 canvasCtx.textBaseline = 'middle';
