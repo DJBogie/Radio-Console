@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* MUSICAL NOTES WAVE VISUALIZER */
+        /* TEMPO-SYNCED MUSICAL NOTES WAVE VISUALIZER */
         .visualizer {
             height: 160px;
             margin: 0 0 20px 0;
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // MUSICAL NOTES ON WAVE ENGINE
+        // TEMPO-SYNCED MUSICAL NOTES WAVE ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -304,19 +304,24 @@
         let visualizerStarted = false;
 
         const notes = [];
-        const noteCount = 12;
+        const noteCount = 10;
         const symbols = ['♩', '♪', '♫', '♬'];
+
+        // Beat/Tempo detection variables
+        let beatTimer = 0;
+        let beatPulse = 0;
+        let lastBassValue = 0;
 
         function initNotes(width, height) {
             notes.length = 0;
             for (let i = 0; i < noteCount; i++) {
                 notes.push({
-                    x: Math.random() * width,
-                    speed: 1.5 + Math.random() * 2.0,
+                    x: (width / noteCount) * i,
+                    baseSpeed: 1.2 + Math.random() * 0.8,
                     symbol: symbols[Math.floor(Math.random() * symbols.length)],
-                    size: 16 + Math.random() * 12,
-                    frequency: 0.015 + Math.random() * 0.01,
-                    amplitude: 25 + Math.random() * 30,
+                    size: 16 + Math.random() * 10,
+                    frequency: 0.012 + Math.random() * 0.008,
+                    amplitude: 20 + Math.random() * 25,
                     phaseOffset: Math.random() * Math.PI * 2
                 });
             }
@@ -342,8 +347,8 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
 
-            analyser.fftSize = 64;
-            analyser.smoothingTimeConstant = 0.5;
+            analyser.fftSize = 128;
+            analyser.smoothingTimeConstant = 0.4;
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
@@ -365,52 +370,69 @@
             canvasCtx.fillStyle = 'rgba(5, 8, 5, 0.35)';
             canvasCtx.fillRect(0, 0, width, height);
 
-            const bufferLength = analyser ? analyser.frequencyBinCount : 16;
+            const bufferLength = analyser ? analyser.frequencyBinCount : 32;
             const dataArray = new Uint8Array(bufferLength);
             let audioEnergy = 0;
+            let bassEnergy = 0;
 
             if (analyser && !audioEl.paused) {
                 analyser.getByteFrequencyData(dataArray);
+                
                 let sum = 0;
                 for (let i = 0; i < bufferLength; i++) {
                     sum += dataArray[i];
                 }
                 audioEnergy = sum / bufferLength / 255;
+
+                // Focus on lower frequency bins for kick/tempo beat detection (bins 0 to 4)
+                let bassSum = 0;
+                for (let i = 0; i < 5; i++) {
+                    bassSum += dataArray[i];
+                }
+                bassEnergy = bassSum / 5 / 255;
             }
+
+            // Simple dynamic transient detector for beat pulses
+            if (bassEnergy > lastBassValue + 0.12 && bassEnergy > 0.4) {
+                beatPulse = 1.0; // Trigger beat kick pulse
+            }
+            lastBassValue = bassEnergy;
+            beatPulse *= 0.90; // Fast decay
 
             const centerY = height / 2;
 
-            // Draw underlying smooth sine wave audio path
-            canvasCtx.strokeStyle = 'rgba(76, 209, 55, 0.25)';
-            canvasCtx.lineWidth = 1.5;
+            // Draw underlying tempo-reactive sine wave audio path
+            canvasCtx.strokeStyle = `rgba(76, 209, 55, ${0.2 + bassEnergy * 0.4})`;
+            canvasCtx.lineWidth = 1.5 + beatPulse * 1.5;
             canvasCtx.beginPath();
             for (let x = 0; x < width; x += 2) {
-                const waveY = centerY + Math.sin(x * 0.02 + Date.now() * 0.003) * (15 + audioEnergy * 35);
+                const waveY = centerY + Math.sin(x * 0.02 + Date.now() * 0.004) * (15 + bassEnergy * 40);
                 if (x === 0) canvasCtx.moveTo(x, waveY);
                 else canvasCtx.lineTo(x, waveY);
             }
             canvasCtx.stroke();
 
-            // Update and draw gliding musical notes
-            const time = Date.now() * 0.003;
+            // Update and draw tempo-synced gliding musical notes
+            const time = Date.now() * 0.0035;
             notes.forEach((note, i) => {
-                const freqVal = analyser && !audioEl.paused ? (dataArray[i % bufferLength] / 255) : 0.2;
-                const currentSpeed = note.speed * (1.0 + audioEnergy * 2.5);
+                // Sync horizontal movement speed dynamically to overall audio energy & beat pulses
+                const tempoMultiplier = 1.0 + (audioEnergy * 1.5) + (beatPulse * 2.5);
+                note.x += note.baseSpeed * tempoMultiplier;
 
-                note.x += currentSpeed;
                 if (note.x > width + 20) {
                     note.x = -20;
-                    note.y = Math.random() * height;
                 }
 
-                // Calculate vertical position gliding along the wave
-                const currentAmp = note.amplitude * (1.0 + audioEnergy * 1.5);
+                // Calculate vertical position gliding along the wave, modulated by tempo pulse
+                const currentAmp = note.amplitude * (1.0 + audioEnergy * 1.0);
                 const y = centerY + Math.sin(note.x * note.frequency + time + note.phaseOffset) * currentAmp;
 
                 canvasCtx.save();
-                canvasCtx.font = `${Math.floor(note.size + audioEnergy * 6)}px sans-serif`;
+                // Notes scale up dynamically on strong beats
+                const currentSize = note.size + (beatPulse * 8) + (audioEnergy * 4);
+                canvasCtx.font = `${Math.floor(currentSize)}px sans-serif`;
                 canvasCtx.fillStyle = '#4cd137';
-                canvasCtx.shadowBlur = 10;
+                canvasCtx.shadowBlur = 12 + beatPulse * 10;
                 canvasCtx.shadowColor = '#4cd137';
                 canvasCtx.textAlign = 'center';
                 canvasCtx.textBaseline = 'middle';
