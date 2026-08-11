@@ -210,7 +210,7 @@
             letter-spacing: 2px;
         }
 
-        /* FISH <-> DUCKS MORPHING VISUALIZER */
+        /* FISH <-> DUCK SWIMMING SCHOOL VISUALIZER */
         .visualizer {
             height: 160px;
             margin: 0 0 20px 0;
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // FISH-TO-DUCK MORPHING VISUALIZER ENGINE
+        // FISH-TO-DUCK CROSSING SCHOOL ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -303,19 +303,17 @@
         let sourceNode = null;
         let visualizerStarted = false;
 
-        const creatureCount = 5;
-        const creatures = [];
+        const schoolCount = 6;
+        const school = [];
 
-        function initCreatures(width) {
-            creatures.length = 0;
-            const spacing = width / (creatureCount + 1);
-            for (let i = 0; i < creatureCount; i++) {
-                creatures.push({
-                    x: spacing * (i + 1),
-                    baseY: 80,
-                    phase: i * 1.5,
-                    speed: 2 + Math.random() * 1.5,
-                    direction: i % 2 === 0 ? 1 : -1
+        function initSchool() {
+            school.length = 0;
+            for (let i = 0; i < schoolCount; i++) {
+                school.push({
+                    x: -60 - (i * 70), // Staggered entry from left
+                    yBase: 40 + Math.random() * 80,
+                    speed: 1.2 + Math.random() * 0.6,
+                    phaseOffset: i * 1.2
                 });
             }
         }
@@ -329,8 +327,8 @@
 
             canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-            if (creatures.length === 0) {
-                initCreatures(rect.width);
+            if (school.length === 0) {
+                initSchool();
             }
         }
 
@@ -376,24 +374,23 @@
                 audioEnergy = sum / bufferLength / 255;
             }
 
-            const time = Date.now() * 0.003;
+            const time = Date.now() * 0.002;
 
-            creatures.forEach((c, i) => {
-                const freqVal = analyser && !audioEl.paused ? (dataArray[i % bufferLength] / 255) : 0.2;
-                
-                // Morph factor (0 = Fish, 1 = Duck), smoothly oscillating over time and influenced by audio
-                const morph = (Math.sin(time * c.speed + c.phase) + 1) / 2;
-                
-                // Swimming / floating motion
-                const yOffset = Math.sin(time * 3 + c.phase) * (10 + audioEnergy * 20);
-                const xPos = c.x + Math.cos(time * 1.5 + c.phase) * 15;
-                const currentY = c.baseY + yOffset;
+            school.forEach((creature, i) => {
+                // Move across frame from left to right, loop back
+                creature.x += creature.speed + (audioEnergy * 1.5);
+                if (creature.x > width + 60) {
+                    creature.x = -80;
+                }
+
+                // Vertical bobbing path
+                const currentY = creature.yBase + Math.sin(time * 3 + creature.phaseOffset) * 12;
+
+                // Continuous morph cycle over time: 0 = Fish, 1 = Duck, back to Fish
+                const morphCycle = (Math.sin(time * 1.5 + creature.phaseOffset) + 1) / 2;
 
                 canvasCtx.save();
-                canvasCtx.translate(xPos, currentY);
-                if (c.direction < 0) {
-                    canvasCtx.scale(-1, 1);
-                }
+                canvasCtx.translate(creature.x, currentY);
 
                 canvasCtx.strokeStyle = '#4cd137';
                 canvasCtx.fillStyle = 'rgba(76, 209, 55, 0.15)';
@@ -401,48 +398,41 @@
                 canvasCtx.shadowBlur = 10;
                 canvasCtx.shadowColor = '#4cd137';
 
-                // ESCHER-STYLE MORPHING PATH (Interpolating between Fish and Duck)
                 canvasCtx.beginPath();
-                
-                if (morph < 0.5) {
-                    // FISH STATE (Tail left, head right, fin on top)
-                    const t = morph * 2; // 0 to 1
-                    canvasCtx.moveTo(-25, 0); // Tail start
-                    canvasCtx.quadraticCurveTo(-15, -12, 0, -8 * (1-t) - 10 * t); // Back curve / head start
-                    canvasCtx.quadraticCurveTo(15, -10, 22, 0); // Snout / beak
-                    canvasCtx.quadraticCurveTo(15, 10, 0, 8); // Belly
-                    canvasCtx.quadraticCurveTo(-15, 12, -25, 0); // Tail close
+
+                if (morphCycle < 0.5) {
+                    // FISH SHAPE
+                    const t = morphCycle * 2;
+                    canvasCtx.moveTo(-25, 0);
+                    canvasCtx.quadraticCurveTo(-15, -12, 0, -8 * (1-t) - 10 * t);
+                    canvasCtx.quadraticCurveTo(15, -10, 22, 0);
+                    canvasCtx.quadraticCurveTo(15, 10, 0, 8);
+                    canvasCtx.quadraticCurveTo(-15, 12, -25, 0);
                     canvasCtx.closePath();
                     canvasCtx.fill();
                     canvasCtx.stroke();
 
-                    // Fin / Wing element
+                    // Dorsal fin
                     canvasCtx.beginPath();
                     canvasCtx.moveTo(0, -8);
-                    canvasCtx.lineTo(5, -18 - (audioEnergy * 8));
+                    canvasCtx.lineTo(5, -16 - (audioEnergy * 6));
                     canvasCtx.lineTo(10, -6);
                     canvasCtx.stroke();
                 } else {
-                    // DUCK STATE (Body, neck curving up to bill)
-                    canvasCtx.beginPath();
-                    // Tail feathers left
+                    // DUCK SHAPE
                     canvasCtx.moveTo(-22, -2);
                     canvasCtx.quadraticCurveTo(-28, -10, -20, -12);
-                    // Back and neck up to head
                     canvasCtx.quadraticCurveTo(-10, -15, 0, -22);
-                    // Head & bill right
                     canvasCtx.arc(8, -24, 6, 0, Math.PI * 2);
-                    // Breast down to belly
                     canvasCtx.quadraticCurveTo(14, -10, 16, 5);
-                    // Underbody back to tail
                     canvasCtx.quadraticCurveTo(0, 12, -22, -2);
                     canvasCtx.closePath();
                     canvasCtx.fill();
                     canvasCtx.stroke();
 
-                    // Wing / Flippers flapping with audio
+                    // Wing flap
                     canvasCtx.beginPath();
-                    const wingFlap = Math.sin(time * 10) * 6 * audioEnergy;
+                    const wingFlap = Math.sin(time * 8) * 5 * audioEnergy;
                     canvasCtx.moveTo(-5, -2);
                     canvasCtx.quadraticCurveTo(5, 5 + wingFlap, 10, -2);
                     canvasCtx.stroke();
