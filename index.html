@@ -210,13 +210,13 @@
             letter-spacing: 2px;
         }
 
-        /* MULTI-LAYERED DOTTED WAVE MESH VISUALIZER */
+        /* CYBERPUNK AUDIO VISUALIZER */
         .visualizer {
-            height: 160px;
+            height: 180px;
             margin: 0 0 20px 0;
             padding: 8px;
-            background: #050308;
-            border: 2px solid #251a30;
+            background: #08080a;
+            border: 2px solid #1a1a2e;
             border-radius: 4px;
             box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
         }
@@ -293,7 +293,7 @@
         const audioEl = document.getElementById('mainAudio');
 
         // ==========================================
-        // MULTI-LAYERED DOTTED WAVE MESH ENGINE
+        // CYBERPUNK AUDIO SPECTRUM ENGINE
         // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
@@ -303,20 +303,32 @@
         let sourceNode = null;
         let visualizerStarted = false;
 
-        let estimatedBPM = 120;
+        // State variables for the complex effects
         let beatPulse = 0;
         let lastKickEnergy = 0;
-        let historyBuffer = new Array(30).fill(0);
+        const historyBuffer = new Array(30).fill(0);
         let historyIndex = 0;
-        let lastBeatTime = 0;
+        let hudRotation = 0;
+        const neonElements = [];
 
-        // Define parallel depth layers for the 3D wave mesh
-        const waveLayers = [
-            { zIndex: 0, opacity: 0.35, frequency: 0.012, speed: 0.002, dotSpacing: 14, baseAmplitude: 15 },
-            { zIndex: 1, opacity: 0.60, frequency: 0.015, speed: 0.003, dotSpacing: 12, baseAmplitude: 22 },
-            { zIndex: 2, opacity: 0.85, frequency: 0.018, speed: 0.004, dotSpacing: 10, baseAmplitude: 30 },
-            { zIndex: 3, opacity: 1.00, frequency: 0.022, speed: 0.005, dotSpacing: 8,  baseAmplitude: 38 }
-        ];
+        function initNeonElements(width, height) {
+            neonElements.length = 0;
+            const symbols = ['♩', '♪', '♫', '♬', 'ℋ', '⚡', '∅', '⌬'];
+            for (let i = 0; i < 35; i++) {
+                neonElements.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    type: Math.random() > 0.5 ? 'symbol' : 'orb',
+                    symbol: symbols[Math.floor(Math.random() * symbols.length)],
+                    orbRadius: 1.5 + Math.random() * 3,
+                    baseGlow: 5 + Math.random() * 10,
+                    pulseSpeed: 0.02 + Math.random() * 0.03,
+                    phase: Math.random() * Math.PI * 2,
+                    driftX: (Math.random() - 0.5) * 0.5,
+                    driftY: (Math.random() - 0.5) * 0.5
+                });
+            }
+        }
 
         function resizeVisualizer() {
             const rect = canvas.getBoundingClientRect();
@@ -325,7 +337,12 @@
             canvas.width = Math.max(1, Math.floor(rect.width * dpr));
             canvas.height = Math.max(1, Math.floor(rect.height * dpr));
 
+            // Scale context to handle HiDPI displays correctly
             canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            if (neonElements.length === 0) {
+                initNeonElements(rect.width, rect.height);
+            }
         }
 
         function setupVisualizer() {
@@ -334,8 +351,9 @@
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
 
-            analyser.fftSize = 256;
-            analyser.smoothingTimeConstant = 0.3;
+            // Configure analyser for spectrum data
+            analyser.fftSize = 512; // Higher resolution for spectrum bars
+            analyser.smoothingTimeConstant = 0.6; // Smooth transition between frames
 
             sourceNode = audioContext.createMediaElementSource(audioEl);
             sourceNode.connect(analyser);
@@ -353,200 +371,55 @@
             const width = rect.width;
             const height = rect.height;
 
-            // Deep cosmic background trail for the mesh
-            canvasCtx.fillStyle = 'rgba(5, 3, 8, 0.45)';
+            // Apply a strong fade trail for motion blur effect
+            canvasCtx.fillStyle = 'rgba(8, 8, 10, 0.38)';
             canvasCtx.fillRect(0, 0, width, height);
 
-            const bufferLength = analyser ? analyser.frequencyBinCount : 64;
+            const bufferLength = analyser ? analyser.frequencyBinCount : 128;
             const dataArray = new Uint8Array(bufferLength);
             let kickEnergy = 0;
+            let avgEnergy = 0;
 
             if (analyser && !audioEl.paused) {
                 analyser.getByteFrequencyData(dataArray);
 
-                let subSum = 0;
-                let subCount = 4;
-                for (let i = 1; i <= subCount; i++) {
-                    subSum += dataArray[i];
+                // Calculate overall energy (average amplitude)
+                let sum = 0;
+                // Focus on a sub-bass/kick range (e.g., first 15% of bins)
+                let kickRange = Math.floor(bufferLength * 0.15);
+                for (let i = 0; i < kickRange; i++) {
+                    sum += dataArray[i];
                 }
-                kickEnergy = subSum / subCount / 255;
+                kickEnergy = sum / kickRange / 255;
+
+                // Average energy across the full spectrum
+                let fullSum = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    fullSum += dataArray[i];
+                }
+                avgEnergy = fullSum / bufferLength / 255;
             }
 
-            // Beat Detector & Transient Logic
+            // Advanced Beat Detection Algorithm
             let historySum = historyBuffer.reduce((a, b) => a + b, 0);
             let localAverage = historySum / historyBuffer.length;
             
             historyBuffer[historyIndex] = kickEnergy;
             historyIndex = (historyIndex + 1) % historyBuffer.length;
 
-            let transientThreshold = localAverage * 1.35;
-            let isBeat = (kickEnergy > transientThreshold) && (kickEnergy > 0.25) && (kickEnergy > lastKickEnergy);
+            let transientThreshold = localAverage * 1.35; // Threshold must be significantly higher than average
+            let isBeat = (kickEnergy > transientThreshold) && (kickEnergy > 0.3) && (kickEnergy > lastKickEnergy);
 
             if (isBeat) {
-                let now = performance.now();
-                if (lastBeatTime > 0) {
-                    let deltaMs = now - lastBeatTime;
-                    if (deltaMs > 250 && deltaMs < 1000) {
-                        let instantaneousBPM = 60000 / deltaMs;
-                        estimatedBPM = estimatedBPM * 0.85 + instantaneousBPM * 0.15;
-                    }
-                }
-                lastBeatTime = now;
-                beatPulse = 1.0;
+                beatPulse = 1.0; // Full beat pulse
             }
             lastKickEnergy = kickEnergy;
-            beatPulse *= 0.85;
+            beatPulse *= 0.82; // Fast decay curve
 
+            // 1. Draw Concentric HUD Circles (Background Layer)
+            const centerX = width / 2;
             const centerY = height / 2;
+            hudRotation += 0.003 + (avgEnergy * 0.01); // Rotation speed reacts to music intensity
 
-            // Render multi-layered dotted wave mesh from back to front (sorted by zIndex)
-            waveLayers.sort((a, b) => a.zIndex - b.zIndex).forEach((layer) => {
-                canvasCtx.save();
-                
-                const waveAmplitude = layer.baseAmplitude + (kickEnergy * 35) + (beatPulse * 15);
-                const time = Date.now() * layer.speed;
-                const verticalOffsetMap = (layer.zIndex - 1.5) * 12; // Spread layers vertically along z-axis depth
-
-                // Iterate across canvas width at exact dot intervals
-                for (let x = 0; x < width; x += layer.dotSpacing) {
-                    const waveVal = Math.sin(x * layer.frequency + time);
-                    const y = centerY + verticalOffsetMap + (waveVal * waveAmplitude);
-
-                    // Purple-to-Blue Gradient calculation based on normalized wave height position
-                    // waveVal ranges from -1 (trough) to +1 (peak)
-                    let normalizedHeight = (waveVal + 1) / 2; // 0 at trough, 1 at peak
-
-                    // Interpolate color from electric blue at trough to deep magenta/purple at peak
-                    let red = Math.floor(120 + normalizedHeight * 115);
-                    let green = Math.floor(20 + normalizedHeight * 30);
-                    let blue = Math.floor(240 - normalizedHeight * 80);
-
-                    let dotAlpha = layer.opacity * (0.5 + (normalizedHeight * 0.5) + (kickEnergy * 0.3));
-                    if (dotAlpha > 1) dotAlpha = 1;
-
-                    canvasCtx.fillStyle = `rgba(${red}, ${green}, ${blue}, ${dotAlpha})`;
-
-                    if (layer.zIndex === waveLayers.length - 1) {
-                        // Apply intense bloom/glow exclusively to the front-most layer during beat transients
-                        canvasCtx.shadowBlur = beatPulse > 0.4 ? 14 + (beatPulse * 16) : 6;
-                        canvasCtx.shadowColor = `rgba(${red}, ${green}, ${blue}, 0.9)`;
-                    } else {
-                        canvasCtx.shadowBlur = 0;
-                    }
-
-                    // Calculate individual dot radius reacting dynamically to bass energy
-                    let dotRadius = 1.5 + (layer.zIndex * 0.5) + (kickEnergy * 1.5) + (beatPulse * 1.0);
-
-                    canvasCtx.beginPath();
-                    canvasCtx.arc(x, y, Math.max(1, dotRadius), 0, Math.PI * 2);
-                    canvasCtx.fill();
-                }
-
-                canvasCtx.restore();
-            });
-        }
-
-        window.addEventListener('resize', resizeVisualizer);
-        resizeVisualizer();
-
-        audioEl.addEventListener('play', () => {
-            try {
-                setupVisualizer();
-
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-            } catch (err) {
-                console.log('Visualizer setup:', err);
-            }
-        });
-
-        const minFreq = 87.0;
-        const maxFreq = 108.0;
-
-        const stations = {
-            87.0: { title: "Quaturo", file: "audio/quaturo.mp3" },
-            87.5: { title: "Automatism", file: "audio/automatism.mp3" },
-            88.0: { title: "Next Flight Home", file: "audio/next flight home.mp3" },
-            88.5: { title: "Father", file: "audio/father.mp3" },
-            89.0: { title: "Cohesion", file: "audio/cohesion.mp3" },
-            89.5: { title: "Sacrifice", file: "audio/sacrifice.mp3" },
-            90.0: { title: "Always", file: "audio/always.mp3" },
-            90.5: { title: "Monster", file: "audio/monster.mp3" },
-            91.0: { title: "Caroline Neron", file: "audio/caroline neron.mp3" },
-            91.5: { title: "Slow Think", file: "audio/slow think.mp3" },
-            92.0: { title: "Inversion", file: "audio/inversion.mp3" },
-            92.5: { title: "Ubiquity", file: "audio/ubiquity.mp3" },
-            93.0: { title: "Understanding", file: "audio/understanding.mp3" },
-            93.5: { title: "Caprizant", file: "audio/caprizant.mp3" },
-            94.0: { title: "Arise", file: "audio/arise.mp3" },
-            94.5: { title: "Melancoly in Flat", file: "audio/melancoly in flat.mp3" },
-            95.0: { title: "Push", file: "audio/push.mp3" },
-            95.5: { title: "Recalcitrant", file: "audio/recalcitrant.mp3" },
-            96.0: { title: "Across Bourbon Street", file: "audio/across bourbon street.mp3" },
-            96.5: { title: "Eveille", file: "audio/eveille.mp3" },
-            97.0: { title: "Esprit Itinerant", file: "audio/esprit itinerant.mp3" },
-            97.5: { title: "The Daunting", file: "audio/the daunting.mp3" },
-            98.0: { title: "Mass Effect", file: "audio/mass effect.mp3" },
-            98.5: { title: "Spectrum", file: "audio/spectrum.mp3" },
-            99.0: { title: "Bang", file: "audio/bang.mp3" },
-            99.5: { title: "Tangerine", file: "audio/tangerine.mp3" },
-            100.0: { title: "Quantum Touch", file: "audio/quantum touch.mp3" },
-            100.5: { title: "Bliss", file: "audio/bliss.mp3" },
-            101.0: { title: "Resounding", file: "audio/resounding.mp3" },
-            101.5: { title: "Oticons", file: "audio/oticons.mp3" },
-            102.0: { title: "Estrange", file: "audio/estrange.mp3" },
-            102.5: { title: "Twin Sparks", file: "audio/twin sparks.mp3" },
-            103.0: { title: "Pacis", file: "audio/pacis.mp3" },
-            103.5: { title: "Chase", file: "audio/chase.mp3" },
-            104.0: { title: "Soleils", file: "audio/soleil.mp3" },
-            104.5: { title: "Grave", file: "audio/grave.mp3" },
-            105.0: { title: "Stubborness", file: "audio/stubborness.mp3" },
-            105.5: { title: "Cinderella Shoe", file: "audio/cinderella shoe.mp3" },
-            106.0: { title: "Dynamite", file: "audio/dynamite.mp3" },
-            106.5: { title: "Equanimity", file: "audio/equanimity.mp3" },
-            107.0: { title: "Lucioles", file: "audio/lucioles.mp3" },
-            107.5: { title: "Dancer", file: "audio/dancer.mp3" },
-            108.0: { title: "There", file: "audio/there.mp3" }
-        };
-
-        tuner.addEventListener('input', (e) => {
-            const rawVal = parseFloat(e.target.value);
-            const percent = ((rawVal - minFreq) / (maxFreq - minFreq)) * 100;
-            tuningBar.style.left = `${percent}%`;
-
-            const keys = Object.keys(stations).map(Number);
-            let closestKey = keys.reduce((prev, curr) => Math.abs(curr - rawVal) < Math.abs(prev - rawVal) ? curr : prev);
-            let minDiff = Math.abs(rawVal - closestKey);
-
-            if (minDiff <= 0.25) {
-                let station = stations[closestKey];
-                stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (${closestKey.toFixed(1)} MHz)`;
-                
-                try {
-                    setupVisualizer();
-
-                    if (audioContext.state === 'suspended') {
-                        audioContext.resume();
-                    }
-                } catch (err) {
-                    console.error("Visualizer initialization failed:", err);
-                }
-
-                if (!audioEl.src.endsWith(station.file)) {
-                    audioEl.src = station.file;
-                    audioEl.load();
-                }
-
-                audioEl.play().catch(err => {
-                    console.log("Playback interaction needed:", err);
-                });
-            } else {
-                stationDisplay.innerHTML = `STATIC... [ FREQ: ${rawVal.toFixed(1)} MHz ]`;
-                audioEl.pause();
-                audioEl.src = "";
-            }
-        });
-    </script>
-</body>
-</html>
+            canvasCtx.save();
+            canvasCtx.translate(
