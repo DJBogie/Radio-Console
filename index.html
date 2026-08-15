@@ -210,7 +210,6 @@
             letter-spacing: 2px;
         }
 
-        /* MAGNIFIED DENSE OSCILLOSCOPE WITH DRIFTING PARTICLES BACKGROUND */
         .visualizer {
             height: 240px;
             margin: 0 0 20px 0;
@@ -307,7 +306,6 @@
         let sourceNode = null;
         let visualizerStarted = false;
 
-        // Background motion particle state
         let particles = [];
         const numParticles = 40;
 
@@ -360,22 +358,19 @@
             const width = rect.width;
             const height = rect.height;
 
-            // Clear background
             canvasCtx.fillStyle = '#000000';
             canvasCtx.fillRect(0, 0, width, height);
 
-            // 1. DRAW MOVING BACKGROUND PARTICLES ONLY (Sweeping bar removed)
             canvasCtx.save();
             particles.forEach(p => {
-                p.x -= p.speed; // Move left to simulate feed motion
-                if (p.x < 0) p.x = width; // Wrap around
+                p.x -= p.speed; 
+                if (p.x < 0) p.x = width;
 
                 canvasCtx.fillStyle = `rgba(100, 150, 255, ${p.opacity})`;
                 canvasCtx.fillRect(p.x, p.y, p.size * 2, p.size);
             });
             canvasCtx.restore();
 
-            // 2. DRAW MAGNIFIED OSCILLOSCOPE WAVEFORM
             const bufferLength = analyser ? analyser.frequencyBinCount : 1024;
             const dataArray = new Uint8Array(bufferLength);
 
@@ -432,6 +427,7 @@
             88.0: { title: "Gamma", file: "audio/next flight home.mp3" },
             88.5: { title: "Delta", file: "audio/father.mp3" },
             89.0: { title: "Epsilon", file: "audio/cohesion.mp3" },
+            89.2: { title: "News Transmission - Morning Brief", file: "audio/news/latest_brief.mp3" }, // <--- Inserted News Byte
             89.5: { title: "Stigma", file: "audio/sacrifice.mp3" },
             90.0: { title: "Zeta", file: "audio/always.mp3" },
             90.5: { title: "Eta", file: "audio/monster.mp3" },
@@ -444,6 +440,7 @@
             94.0: { title: "Iota Epsilon", file: "audio/arise.mp3" },
             94.5: { title: "Iota Stigma", file: "audio/melancoly in flat.mp3" },
             95.0: { title: "Iota Zeta", file: "audio/push.mp3" },
+            95.2: { title: "News Transmission - Hourly Dispatch", file: "audio/news/hourly_dispatch.mp3" }, // <--- Inserted News Byte
             95.5: { title: "Iota Eta", file: "audio/recalcitrant.mp3" },
             96.0: { title: "Iota Theta", file: "audio/across bourbon street.mp3" },
             96.5: { title: "Kappa", file: "audio/eveille.mp3" },
@@ -456,6 +453,7 @@
             100.0: { title: "Kappa Zeta", file: "audio/quantum touch.mp3" },
             100.5: { title: "Kappa Eta", file: "audio/bliss.mp3" },
             101.0: { title: "Kappa Theta", file: "audio/resounding.mp3" },
+            101.2: { title: "News Transmission - Evening Report", file: "audio/news/evening_report.mp3" }, // <--- Inserted News Byte
             101.5: { title: "Lambda", file: "audio/oticons.mp3" },
             102.0: { title: "Lambda Alpha", file: "audio/estrange.mp3" },
             102.5: { title: "Lambda Beta", file: "audio/twin sparks.mp3" },
@@ -481,7 +479,7 @@
             let closestKey = keys.reduce((prev, curr) => Math.abs(curr - rawVal) < Math.abs(prev - rawVal) ? curr : prev);
             let minDiff = Math.abs(rawVal - closestKey);
 
-            if (minDiff <= 0.25) {
+            if (minDiff <= 0.15) { // Tightened slightly to accommodate closer frequency stepping
                 let station = stations[closestKey];
                 stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (${closestKey.toFixed(1)} MHz)`;
                 
