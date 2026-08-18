@@ -35,30 +35,12 @@
             backdrop-filter: blur(2px);
         }
 
-        .header-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
         .brand-plate {
             font-size: 14px;
             letter-spacing: 4px;
             color: #8c7355;
+            margin-bottom: 15px;
             text-transform: uppercase;
-            margin-bottom: 0;
-        }
-
-        /* Power LED Indicator */
-        .power-led {
-            width: 8px;
-            height: 8px;
-            background-color: #ff3333;
-            border-radius: 50%;
-            box-shadow: 0 0 6px #ff3333, inset 0 1px 1px rgba(255,255,255,0.6);
-            animation: textPulse 1.5s infinite alternate;
         }
 
         .radio-faceplate {
@@ -103,17 +85,6 @@
             height: 20px;
             background: #222;
             border-radius: 2px;
-        }
-
-        /* Pulsing Glow Animation for Tuning Knob */
-        @keyframes knobGlow {
-            0% { box-shadow: 0 8px 16px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.8), 0 0 5px rgba(140, 115, 85, 0.2); }
-            50% { box-shadow: 0 8px 16px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.8), 0 0 18px rgba(255, 170, 51, 0.6); }
-            100% { box-shadow: 0 8px 16px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.8), 0 0 5px rgba(140, 115, 85, 0.2); }
-        }
-
-        .knob-assembly:last-child .knob {
-            animation: knobGlow 3s infinite ease-in-out;
         }
 
         .knob-label {
@@ -217,17 +188,6 @@
             text-shadow: 0 0 6px rgba(76, 209, 55, 0.4);
         }
 
-        /* Blinking Call-to-Action Prompt */
-        @keyframes textPulse {
-            0% { opacity: 0.4; }
-            50% { opacity: 1; text-shadow: 0 0 8px rgba(76, 209, 55, 0.8); }
-            100% { opacity: 0.4; }
-        }
-
-        .blink-prompt {
-            animation: textPulse 2s infinite ease-in-out;
-        }
-
         .controls-panel {
             display: flex;
             flex-direction: column;
@@ -250,7 +210,6 @@
             letter-spacing: 2px;
         }
 
-        /* MAGNIFIED DENSE OSCILLOSCOPE WITH DRIFTING PARTICLES BACKGROUND */
         .visualizer {
             height: 240px;
             margin: 0 0 20px 0;
@@ -275,10 +234,7 @@
 <body>
 
     <div class="console-cabinet">
-        <div class="header-container">
-            <div class="brand-plate">DJBogie Radio Console High Fidelity Receiver</div>
-            <div class="power-led"></div>
-        </div>
+        <div class="brand-plate">DJBogie Radio Console High Fidelity Receiver</div>
         
         <div class="radio-faceplate">
             <div class="knob-assembly">
@@ -296,7 +252,7 @@
                 </div>
 
                 <div class="tuning-track-container">
-                    <div id="tuningBar" class="tuning-indicator-bar" style="left: 0%;"></div>
+                    <div id="tuningBar" class="tuning-indicator-bar" style="left: 71.43%;"></div>
                 </div>
 
                 <div class="scale-row">
@@ -317,7 +273,7 @@
         </div>
         
         <div class="screen-display" id="stationDisplay">
-            <span class="blink-prompt">> CLICK ANYWHERE OR SLIDE TUNER TO ACTIVATE TRANSMISSION...</span>
+            [ LOCKED ] > TRANSMISSION: Lambda Alpha (102.0 MHz)
         </div>
 
         <div class="visualizer">
@@ -325,7 +281,7 @@
         </div>
 
         <div class="controls-panel">
-            <input type="range" id="tuner" min="87.0" max="108.0" step="0.1" value="87.0">
+            <input type="range" id="tuner" min="87.0" max="108.0" step="0.1" value="102.0">
             <div class="helper-text">Frequency Slide Tuner</div>
         </div>
     </div>
@@ -339,9 +295,6 @@
         const stationDisplay = document.getElementById('stationDisplay');
         const audioEl = document.getElementById('mainAudio');
 
-        // ==========================================
-        // DENSE OSCILLOSCOPE + DRIFTING PARTICLES ENGINE
-        // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
 
@@ -391,8 +344,6 @@
             analyser.connect(audioContext.destination);
 
             visualizerStarted = true;
-            resizeVisualizer();
-            drawVisualizer();
         }
 
         function drawVisualizer() {
@@ -405,6 +356,7 @@
             canvasCtx.fillStyle = '#000000';
             canvasCtx.fillRect(0, 0, width, height);
 
+            // Draw moving background particles
             canvasCtx.save();
             particles.forEach(p => {
                 p.x -= p.speed; 
@@ -415,41 +367,40 @@
             });
             canvasCtx.restore();
 
+            // Draw Waveform only when audio is actively playing and context is running
             const bufferLength = analyser ? analyser.frequencyBinCount : 1024;
             const dataArray = new Uint8Array(bufferLength);
 
-            if (analyser && !audioEl.paused) {
+            if (analyser && audioContext && audioContext.state === 'running' && !audioEl.paused) {
                 analyser.getByteTimeDomainData(dataArray);
-            } else {
-                dataArray.fill(128);
-            }
 
-            canvasCtx.lineWidth = 1.5;
-            canvasCtx.strokeStyle = '#ffffff';
-            canvasCtx.beginPath();
+                canvasCtx.lineWidth = 1.5;
+                canvasCtx.strokeStyle = '#ffffff';
+                canvasCtx.beginPath();
 
-            const sliceWidth = width / bufferLength;
-            let x = 0;
+                const sliceWidth = width / bufferLength;
+                let x = 0;
 
-            for (let i = 0; i < bufferLength; i++) {
-                const v = dataArray[i] / 128.0; 
-                const y = (v - 1.0) * (height * 1.5) + (height / 2);
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0; 
+                    const y = (v - 1.0) * (height * 1.5) + (height / 2);
 
-                if (i === 0) {
-                    canvasCtx.moveTo(x, y);
-                } else {
-                    canvasCtx.lineTo(x, y);
+                    if (i === 0) {
+                        canvasCtx.moveTo(x, y);
+                    } else {
+                        canvasCtx.lineTo(x, y);
+                    }
+
+                    x += sliceWidth;
                 }
 
-                x += sliceWidth;
+                canvasCtx.stroke();
             }
-
-            canvasCtx.stroke();
         }
 
         window.addEventListener('resize', resizeVisualizer);
         resizeVisualizer();
-        drawVisualizer(); // Start background loop immediately
+        drawVisualizer(); // Start the background visualizer loop immediately on load
 
         const minFreq = 87.0;
         const maxFreq = 108.0;
@@ -500,47 +451,31 @@
             108.0: { title: "Mu Gamma", file: "audio/there.mp3" }
         };
 
-        // AUTO-BOOT INITIALIZER (Muted playback on load for immediate visual activity)
-        let isUnmuted = false;
+        // Pre-load 102.0 MHz track on startup
+        const initialStation = stations[102.0];
+        audioEl.src = initialStation.file;
+        audioEl.load();
 
-        function bootRadio() {
-            const defaultFreq = 102.0;
-            tuner.value = defaultFreq;
-            
-            const percent = ((defaultFreq - minFreq) / (maxFreq - minFreq)) * 100;
-            tuningBar.style.left = `${percent}%`;
-
-            audioEl.src = stations[defaultFreq].file;
-            audioEl.muted = true;
-            
-            audioEl.play().then(() => {
-                setupVisualizer();
-            }).catch(err => {
-                console.log("Auto-boot play error:", err);
-            });
-        }
-
-        function handleFirstInteraction() {
-            if (isUnmuted) return;
-            isUnmuted = true;
-
-            audioEl.muted = false;
+        // Automatically start music and the active visualizer waveform on the very first page interaction (click, key, touch)
+        const unlockAudio = () => {
+            setupVisualizer();
             if (audioContext && audioContext.state === 'suspended') {
                 audioContext.resume();
             }
+            audioEl.play().catch(err => console.log("Playback error:", err));
             
-            // Switch screen display back to normal active station layout once interacted
-            const activeFreq = parseFloat(tuner.value);
-            stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: Lambda Alpha (102.0 MHz)`;
-        }
+            window.removeEventListener('click', unlockAudio);
+            window.removeEventListener('keydown', unlockAudio);
+            window.removeEventListener('touchstart', unlockAudio);
+        };
 
-        ['click', 'keydown', 'touchstart', 'mousedown'].forEach(evt => {
-            window.addEventListener(evt, handleFirstInteraction, { once: true });
-        });
+        window.addEventListener('click', unlockAudio);
+        window.addEventListener('keydown', unlockAudio);
+        window.addEventListener('touchstart', unlockAudio);
 
-        bootRadio();
-
-        function updateStation(rawVal) {
+        // Tuning change listener
+        tuner.addEventListener('input', (e) => {
+            const rawVal = parseFloat(e.target.value);
             const percent = ((rawVal - minFreq) / (maxFreq - minFreq)) * 100;
             tuningBar.style.left = `${percent}%`;
 
@@ -552,9 +487,13 @@
                 let station = stations[closestKey];
                 stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (${closestKey.toFixed(1)} MHz)`;
                 
-                setupVisualizer();
-                if (audioContext && audioContext.state === 'suspended') {
-                    audioContext.resume();
+                try {
+                    setupVisualizer();
+                    if (audioContext && audioContext.state === 'suspended') {
+                        audioContext.resume();
+                    }
+                } catch (err) {
+                    console.error("Audio context resume failed:", err);
                 }
 
                 if (!audioEl.src.endsWith(station.file)) {
@@ -563,17 +502,14 @@
                 }
 
                 audioEl.play().catch(err => {
-                    console.log("Playback interaction pending:", err);
+                    console.log("Playback interaction needed:", err);
                 });
             } else {
+                // Between stations: hide waveform (leaves only background floating particles active)
                 stationDisplay.innerHTML = `STATIC... [ FREQ: ${rawVal.toFixed(1)} MHz ]`;
                 audioEl.pause();
                 audioEl.src = "";
             }
-        }
-
-        tuner.addEventListener('input', (e) => {
-            updateStation(parseFloat(e.target.value));
         });
     </script>
 </body>
