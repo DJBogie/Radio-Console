@@ -295,9 +295,6 @@
         const stationDisplay = document.getElementById('stationDisplay');
         const audioEl = document.getElementById('mainAudio');
 
-        // ==========================================
-        // DENSE OSCILLOSCOPE + DRIFTING PARTICLES ENGINE
-        // ==========================================
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas.getContext('2d');
 
@@ -347,8 +344,6 @@
             analyser.connect(audioContext.destination);
 
             visualizerStarted = true;
-            resizeVisualizer();
-            drawVisualizer();
         }
 
         function drawVisualizer() {
@@ -361,8 +356,9 @@
             canvasCtx.fillStyle = '#000000';
             canvasCtx.fillRect(0, 0, width, height);
 
+            // Draw moving background particles
             canvasCtx.save();
-            particles.rules = particles.forEach(p => {
+            particles.forEach(p => {
                 p.x -= p.speed; 
                 if (p.x < 0) p.x = width; 
 
@@ -371,13 +367,14 @@
             });
             canvasCtx.restore();
 
+            // Draw Waveform (active if playing, flat line if paused instead of static noise)
             const bufferLength = analyser ? analyser.frequencyBinCount : 1024;
             const dataArray = new Uint8Array(bufferLength);
 
-            if (analyser && !audioEl.paused) {
+            if (analyser && audioContext && audioContext.state === 'running' && !audioEl.paused) {
                 analyser.getByteTimeDomainData(dataArray);
             } else {
-                dataArray.fill(128);
+                dataArray.fill(128); // Flat line
             }
 
             canvasCtx.lineWidth = 1.5;
@@ -405,9 +402,7 @@
 
         window.addEventListener('resize', resizeVisualizer);
         resizeVisualizer();
-
-        // Immediately fire up visualizer background loop on load
-        setupVisualizer();
+        drawVisualizer(); // Start visualizer loop immediately
 
         const minFreq = 87.0;
         const maxFreq = 108.0;
@@ -458,6 +453,29 @@
             108.0: { title: "Mu Gamma", file: "audio/there.mp3" }
         };
 
+        // Load 102.0 on startup
+        const initialStation = stations[102.0];
+        audioEl.src = initialStation.file;
+        audioEl.load();
+
+        // Unlock audio context and start playing on the very first user click/interaction anywhere on the page
+        const unlockAudio = () => {
+            setupVisualizer();
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            audioEl.play().catch(err => console.log("Playback error:", err));
+            
+            // Remove listeners after first interaction
+            window.removeEventListener('click', unlockAudio);
+            window.removeEventListener('keydown', unlockAudio);
+            window.removeEventListener('touchstart', unlockAudio);
+        };
+
+        window.addEventListener('click', unlockAudio);
+        window.addEventListener('keydown', unlockAudio);
+        window.addEventListener('touchstart', unlockAudio);
+
         // Tuning change listener
         tuner.addEventListener('input', (e) => {
             const rawVal = parseFloat(e.target.value);
@@ -473,6 +491,7 @@
                 stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (${closestKey.toFixed(1)} MHz)`;
                 
                 try {
+                    setupVisualizer();
                     if (audioContext && audioContext.state === 'suspended') {
                         audioContext.resume();
                     }
@@ -489,23 +508,9 @@
                     console.log("Playback interaction needed:", err);
                 });
             } else {
-                // If it hits a gap, keep the visualizer line flat instead of acting like static noise
                 stationDisplay.innerHTML = `STATIC... [ FREQ: ${rawVal.toFixed(1)} MHz ]`;
                 audioEl.pause();
                 audioEl.src = "";
-            }
-        });
-
-        // Initialize immediately to 102.0 MHz on page load
-        window.addEventListener('DOMContentLoaded', () => {
-            const initialFreq = 102.0;
-            const station = stations[initialFreq];
-            if (station) {
-                audioEl.src = station.file;
-                audioEl.load();
-                audioEl.play().catch(err => {
-                    console.log("Browser autoplay policy prevented audio, waiting for user click/interaction:", err);
-                });
             }
         });
     </script>
