@@ -367,42 +367,40 @@
             });
             canvasCtx.restore();
 
-            // Draw Waveform (active if playing, flat line if paused instead of static noise)
+            // Draw Waveform only when audio is actively playing and context is running
             const bufferLength = analyser ? analyser.frequencyBinCount : 1024;
             const dataArray = new Uint8Array(bufferLength);
 
             if (analyser && audioContext && audioContext.state === 'running' && !audioEl.paused) {
                 analyser.getByteTimeDomainData(dataArray);
-            } else {
-                dataArray.fill(128); // Flat line
-            }
 
-            canvasCtx.lineWidth = 1.5;
-            canvasCtx.strokeStyle = '#ffffff';
-            canvasCtx.beginPath();
+                canvasCtx.lineWidth = 1.5;
+                canvasCtx.strokeStyle = '#ffffff';
+                canvasCtx.beginPath();
 
-            const sliceWidth = width / bufferLength;
-            let x = 0;
+                const sliceWidth = width / bufferLength;
+                let x = 0;
 
-            for (let i = 0; i < bufferLength; i++) {
-                const v = dataArray[i] / 128.0; 
-                const y = (v - 1.0) * (height * 1.5) + (height / 2);
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0; 
+                    const y = (v - 1.0) * (height * 1.5) + (height / 2);
 
-                if (i === 0) {
-                    canvasCtx.moveTo(x, y);
-                } else {
-                    canvasCtx.lineTo(x, y);
+                    if (i === 0) {
+                        canvasCtx.moveTo(x, y);
+                    } else {
+                        canvasCtx.lineTo(x, y);
+                    }
+
+                    x += sliceWidth;
                 }
 
-                x += sliceWidth;
+                canvasCtx.stroke();
             }
-
-            canvasCtx.stroke();
         }
 
         window.addEventListener('resize', resizeVisualizer);
         resizeVisualizer();
-        drawVisualizer(); // Start visualizer loop immediately
+        drawVisualizer(); // Start the background visualizer loop immediately on load
 
         const minFreq = 87.0;
         const maxFreq = 108.0;
@@ -453,12 +451,12 @@
             108.0: { title: "Mu Gamma", file: "audio/there.mp3" }
         };
 
-        // Load 102.0 on startup
+        // Pre-load 102.0 MHz track on startup
         const initialStation = stations[102.0];
         audioEl.src = initialStation.file;
         audioEl.load();
 
-        // Unlock audio context and start playing on the very first user click/interaction anywhere on the page
+        // Automatically start music and the active visualizer waveform on the very first page interaction (click, key, touch)
         const unlockAudio = () => {
             setupVisualizer();
             if (audioContext && audioContext.state === 'suspended') {
@@ -466,7 +464,6 @@
             }
             audioEl.play().catch(err => console.log("Playback error:", err));
             
-            // Remove listeners after first interaction
             window.removeEventListener('click', unlockAudio);
             window.removeEventListener('keydown', unlockAudio);
             window.removeEventListener('touchstart', unlockAudio);
@@ -508,6 +505,7 @@
                     console.log("Playback interaction needed:", err);
                 });
             } else {
+                // Between stations: hide waveform (leaves only background floating particles active)
                 stationDisplay.innerHTML = `STATIC... [ FREQ: ${rawVal.toFixed(1)} MHz ]`;
                 audioEl.pause();
                 audioEl.src = "";
