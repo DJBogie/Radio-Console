@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Radio Console - Independent Broadcast</title>
+    
+    <!-- HLS.js Library for Universal Browser Support of .m3u8 Streams -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
     <style>
         body {
             background-color: #2b1d15;
@@ -302,6 +306,7 @@
         let analyser = null;
         let sourceNode = null;
         let visualizerStarted = false;
+        let hlsInstance = null; // Tracks active HLS stream session
 
         let particles = [];
         const numParticles = 40;
@@ -414,9 +419,10 @@
         const defaultFrequency = 87.0;
 
         const stations = {
+            // 87.0 MHz CONFIGURED FOR LIVE RADIO-CANADA STREAM VIA HLS
             87.0: { 
-                title: "Live Broadcast Feed", 
-                file: "https://ice2.somafm.com/groovesalad-128-mp3", 
+                title: "ICI Radio-Canada Montréal (Live)", 
+                file: "https://rcavliveaudio.akamaized.net/hls/live/2006635/P-2QMTL0_MTL/master.m3u8", 
                 isLive: true 
             },
             87.5: { title: "Beta", file: "audio/automatism.mp3" },
@@ -463,6 +469,38 @@
             108.0: { title: "Mu Gamma", file: "audio/there.mp3" }
         };
 
+        function loadAudioSource(url, isHls) {
+            // Clean up previous HLS instance if active
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
+
+            audioEl.pause();
+            audioEl.src = "";
+
+            if (isHls && url.endsWith('.m3u8')) {
+                if (Hls.isSupported()) {
+                    hlsInstance = new Hls();
+                    hlsInstance.loadSource(url);
+                    hlsInstance.attachMedia(audioEl);
+                    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                        audioEl.play().catch(err => console.log("HLS autoplay locked:", err));
+                    });
+                } else if (audioEl.canPlayType('application/vnd.apple.mpegurl')) {
+                    // Native Safari fallback for HLS
+                    audioEl.src = url;
+                    audioEl.load();
+                    audioEl.play().catch(err => console.log("Native HLS autoplay locked:", err));
+                }
+            } else {
+                // Standard local MP3 file playback
+                audioEl.src = url;
+                audioEl.load();
+                audioEl.play().catch(err => console.log("Standard audio autoplay locked:", err));
+            }
+        }
+
         function tuneToFrequency(rawVal) {
             if (!tuningBar || !stationDisplay || !audioEl) return;
             const percent = ((rawVal - minFreq) / (maxFreq - minFreq)) * 100;
@@ -481,15 +519,12 @@
                     stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (${closestKey.toFixed(1)} MHz)`;
                 }
 
-                if (!audioEl.src.endsWith(station.file)) {
-                    audioEl.src = station.file;
-                    audioEl.load();
-                }
-
-                audioEl.play().catch(err => {
-                    console.log("Autoplay constrained by browser policy until interaction:", err);
-                });
+                loadAudioSource(station.file, station.isLive);
             } else {
+                if (hlsInstance) {
+                    hlsInstance.destroy();
+                    hlsInstance = null;
+                }
                 stationDisplay.innerHTML = `STATIC... [ FREQ: ${rawVal.toFixed(1)} MHz ]`;
                 audioEl.pause();
                 audioEl.src = "";
@@ -510,8 +545,7 @@
             if (tuningBar) tuningBar.style.left = '0%';
             if (stationDisplay) stationDisplay.innerHTML = `[ LIVE LOCKED ] > CHANNEL: ${station.title} (${defaultFrequency.toFixed(1)} MHz)`;
             
-            audioEl.src = station.file;
-            audioEl.load();
+            loadAudioSource(station.file, station.isLive);
             
             audioEl.play().catch(err => {
                 console.log("Initial autoplay lock active. Will play on first user click.");
