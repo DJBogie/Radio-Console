@@ -113,7 +113,6 @@
             overflow: hidden;
         }
 
-        /* Subtle glass glare reflection across the dial */
         .dial-window::after {
             content: '';
             position: absolute;
@@ -191,7 +190,6 @@
             margin-top: 6px;
         }
 
-        /* Vintage CRT Screen Display with Scanlines */
         .screen-display {
             background: #060a06;
             border: 2px solid #141c14;
@@ -208,7 +206,6 @@
             overflow: hidden;
         }
 
-        /* Scanline effect overlay */
         .screen-display::before {
             content: " ";
             display: block;
@@ -319,8 +316,8 @@
         </div>
     </div>
 
-    <!-- Audio Element with loop support, CORS, and mobile readiness -->
-    <audio id="mainAudio" preload="auto" crossorigin="anonymous" loop></audio>
+    <!-- Audio Element with explicit loop configuration, CORS, and mobile attributes -->
+    <audio id="mainAudio" preload="auto" crossorigin="anonymous" playsinline loop></audio>
 
     <script>
         const tuner = document.getElementById('tuner');
@@ -334,7 +331,6 @@
         let audioContext = null;
         let analyser = null;
         let sourceNode = null;
-        let visualizerStarted = false;
         let hlsInstance = null;
 
         let particles = [];
@@ -364,21 +360,31 @@
         }
 
         function setupVisualizer() {
-            if (visualizerStarted || !audioEl) return;
+            if (!audioEl) return;
             try {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 2048; 
-                analyser.smoothingTimeConstant = 0.3;
+                if (!audioContext) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    audioContext = new AudioContextClass();
+                }
 
-                sourceNode = audioContext.createMediaElementSource(audioEl);
-                sourceNode.connect(analyser);
-                analyser.connect(audioContext.destination);
-                visualizerStarted = true;
-                resizeVisualizer();
-                drawVisualizer();
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
+                // Prevent multiple node binding exceptions on the same audio element
+                if (!analyser) {
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 2048;
+                    analyser.smoothingTimeConstant = 0.3;
+                }
+
+                if (!sourceNode) {
+                    sourceNode = audioContext.createMediaElementSource(audioEl);
+                    sourceNode.connect(analyser);
+                    analyser.connect(audioContext.destination);
+                }
             } catch (err) {
-                console.log('Visualizer setup note:', err);
+                console.log('Visualizer binding notice:', err);
             }
         }
 
@@ -393,6 +399,7 @@
             canvasCtx.fillStyle = '#020205';
             canvasCtx.fillRect(0, 0, width, height);
 
+            // Render drifting background particles
             canvasCtx.save();
             particles.forEach(p => {
                 p.x -= p.speed;
@@ -411,7 +418,8 @@
                 dataArray.fill(128);
             }
 
-            canvasCtx.lineWidth = 1.5;
+            // Render crisp oscilloscope waveform
+            canvasCtx.lineWidth = 1.8;
             canvasCtx.strokeStyle = '#76ff63';
             canvasCtx.beginPath();
 
@@ -433,15 +441,17 @@
 
         window.addEventListener('resize', resizeVisualizer);
         resizeVisualizer();
+        requestAnimationFrame(drawVisualizer);
 
-        // Mobile AudioContext unlocking & Media Session integration
-        function resumeAudioContext() {
+        // Global gesture listeners to unlock mobile audio contexts instantly
+        function unlockAudioPipeline() {
             if (audioContext && audioContext.state === 'suspended') {
                 audioContext.resume();
             }
+            setupVisualizer();
         }
-        window.addEventListener('touchstart', resumeAudioContext, { passive: true });
-        window.addEventListener('click', resumeAudioContext);
+        window.addEventListener('touchstart', unlockAudioPipeline, { passive: true });
+        window.addEventListener('click', unlockAudioPipeline);
 
         function updateMediaSession(title) {
             if ('mediaSession' in navigator) {
@@ -516,6 +526,7 @@
             audioEl.src = "";
             audioEl.loop = !isHls;
             updateMediaSession(title);
+            setupVisualizer();
 
             if (isHls && url.endsWith('.m3u8')) {
                 if (Hls.isSupported()) {
@@ -584,15 +595,17 @@
             
             loadAudioSource(station.file, station.isLive, station.title);
             
-            audioEl.play().catch(err => {
-                console.log("Initial autoplay lock active. Will play on first user click.");
-                const unlockAudio = () => {
+            audioEl.play().catch(() => {
+                const unlockOnGesture = () => {
                     audioEl.play();
-                    window.removeEventListener('click', unlockAudio);
-                    window.removeEventListener('keydown', unlockAudio);
+                    setupVisualizer();
+                    window.removeEventListener('click', unlockOnGesture);
+                    window.removeEventListener('keydown', unlockOnGesture);
+                    window.removeEventListener('touchstart', unlockOnGesture);
                 };
-                window.addEventListener('click', unlockAudio);
-                window.addEventListener('keydown', unlockAudio);
+                window.addEventListener('click', unlockOnGesture);
+                window.addEventListener('keydown', unlockOnGesture);
+                window.addEventListener('touchstart', unlockOnGesture);
             });
         });
     </script>
