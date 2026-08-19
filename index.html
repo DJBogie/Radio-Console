@@ -290,8 +290,8 @@
         </div>
     </div>
 
-    <!-- Audio Element with explicit CORS support -->
-    <audio id="mainAudio" preload="auto" crossorigin="anonymous"></audio>
+    <!-- Audio Element with explicit CORS and loop support -->
+    <audio id="mainAudio" preload="auto" crossorigin="anonymous" loop></audio>
 
     <script>
         const tuner = document.getElementById('tuner');
@@ -479,6 +479,9 @@
             audioEl.pause();
             audioEl.src = "";
 
+            // Configure looping behavior: disable loop for live streams, enable for local tracks
+            audioEl.loop = !isHls;
+
             if (isHls && url.endsWith('.m3u8')) {
                 if (Hls.isSupported()) {
                     hlsInstance = new Hls();
@@ -526,6 +529,7 @@
                     hlsInstance = null;
                 }
                 stationDisplay.innerHTML = `STATIC... [ FREQ: ${rawVal.toFixed(1)} MHz ]`;
+                audioEl.loop = false;
                 audioEl.pause();
                 audioEl.src = "";
             }
