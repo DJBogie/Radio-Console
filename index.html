@@ -1,4 +1,274 @@
-window.addEventListener('DOMContentLoaded', () => {
+<script>
+        const tuner = document.getElementById('tuner');
+        const tuningBar = document.getElementById('tuningBar');
+        const stationDisplay = document.getElementById('stationDisplay');
+        const audioEl = document.getElementById('mainAudio');
+
+        const canvas = document.getElementById('visualizerCanvas');
+        const canvasCtx = canvas ? canvas.getContext('2d') : null;
+
+        let audioContext = null;
+        let analyser = null;
+        let sourceNode = null;
+        let hlsInstance = null;
+
+        let particles = [];
+        const numParticles = 40;
+
+        function initParticles(width, height) {
+            particles = [];
+            for (let i = 0; i < numParticles; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() * 2 + 0.5,
+                    speed: Math.random() * 0.8 + 0.2,
+                    opacity: Math.random() * 0.3 + 0.05
+                });
+            }
+        }
+
+        function resizeVisualizer() {
+            if (!canvas || !canvasCtx) return;
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+            canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+            canvasCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            initParticles(rect.width, rect.height);
+        }
+
+        function setupVisualizer() {
+            if (!audioEl) return;
+            try {
+                if (!audioContext) {
+                    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                    audioContext = new AudioContextClass();
+                }
+
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
+                if (!analyser) {
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 2048;
+                    analyser.smoothingTimeConstant = 0.3;
+                }
+
+                if (!sourceNode) {
+                    sourceNode = audioContext.createMediaElementSource(audioEl);
+                    sourceNode.connect(analyser);
+                    analyser.connect(audioContext.destination);
+                }
+            } catch (err) {
+                console.log('Visualizer binding notice:', err);
+            }
+        }
+
+        function drawVisualizer() {
+            requestAnimationFrame(drawVisualizer);
+            if (!canvas || !canvasCtx) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+
+            canvasCtx.fillStyle = '#020205';
+            canvasCtx.fillRect(0, 0, width, height);
+
+            canvasCtx.save();
+            particles.forEach(p => {
+                p.x -= p.speed;
+                if (p.x < 0) p.x = width;
+                canvasCtx.fillStyle = `rgba(100, 150, 255, ${p.opacity})`;
+                canvasCtx.fillRect(p.x, p.y, p.size * 2, p.size);
+            });
+            canvasCtx.restore();
+
+            const bufferLength = analyser ? analyser.frequencyBinCount : 1024;
+            const dataArray = new Uint8Array(bufferLength);
+
+            if (analyser && audioEl && !audioEl.paused) {
+                analyser.getByteTimeDomainData(dataArray);
+            } else {
+                dataArray.fill(128);
+            }
+
+            canvasCtx.lineWidth = 1.8;
+            canvasCtx.strokeStyle = '#76ff63';
+            canvasCtx.beginPath();
+
+            const sliceWidth = width / bufferLength;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i] / 128.0; 
+                const y = (v - 1.0) * (height * 1.5) + (height / 2);
+                if (i === 0) {
+                    canvasCtx.moveTo(x, y);
+                } else {
+                    canvasCtx.lineTo(x, y);
+                }
+                x += sliceWidth;
+            }
+            canvasCtx.stroke();
+        }
+
+        window.addEventListener('resize', resizeVisualizer);
+        resizeVisualizer();
+        requestAnimationFrame(drawVisualizer);
+
+        function unlockAudioPipeline() {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            setupVisualizer();
+        }
+        window.addEventListener('touchstart', unlockAudioPipeline, { passive: true });
+        window.addEventListener('click', unlockAudioPipeline);
+
+        function updateMediaSession(title) {
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: title,
+                    artist: "DJBogie Radio Console",
+                    album: "Independent Broadcast",
+                    artwork: [{ src: 'photo/background.png', sizes: '512x512', type: 'image/png' }]
+                });
+                navigator.mediaSession.setActionHandler('play', () => { audioEl.play(); });
+                navigator.mediaSession.setActionHandler('pause', () => { audioEl.pause(); });
+            }
+        }
+
+        const minFreq = 87.0;
+        const maxFreq = 108.0;
+        const defaultFrequency = 87.0;
+        
+        let activeLockedStation = null;
+
+        const stations = {
+            87.0: { title: "ICI Radio-Canada Montréal (Live)", file: "https://rcavliveaudio.akamaized.net/hls/live/2006635/P-2QMTL0_MTL/master.m3u8", isLive: true },
+            87.5: { title: "Beta", file: "audio/automatism.mp3" },
+            88.0: { title: "Gamma", file: "audio/next flight home.mp3" },
+            88.5: { title: "Delta", file: "audio/father.mp3" },
+            89.0: { title: "Epsilon", file: "audio/cohesion.mp3" },
+            89.5: { title: "Stigma", file: "audio/sacrifice.mp3" },
+            90.0: { title: "Zeta", file: "audio/always.mp3" },
+            90.5: { title: "Eta", file: "audio/monster.mp3" },
+            91.0: { title: "Theta", file: "audio/Ripple2026.mp3" },
+            91.5: { title: "Iota", file: "audio/slow think.mp3" },
+            92.0: { title: "Iota Alpha", file: "audio/inversion.mp3" },
+            92.5: { title: "Iota Beta", file: "audio/ubiquity.mp3" },
+            93.0: { title: "Iota Gamma", file: "audio/understanding.mp3" },
+            93.5: { title: "Iota Delta", file: "audio/rEADYsETgO 2026.mp3" },
+            94.0: { title: "Iota Epsilon", file: "audio/arise.mp3" },
+            94.5: { title: "Iota Stigma", file: "audio/melancoly in flat.mp3" },
+            95.0: { title: "Iota Zeta", file: "audio/push.mp3" },
+            95.5: { title: "Iota Eta", file: "audio/recalcitrant.mp3" },
+            96.0: { title: "Iota Theta", file: "audio/across bourbon street.mp3" },
+            96.5: { title: "Kappa", file: "audio/eveille.mp3" },
+            97.0: { title: "Kappa Alpha", file: "audio/esprit itinerant.mp3" },
+            97.5: { title: "Kappa Beta", file: "audio/the daunting.mp3" },
+            98.0: { title: "Kappa Gamma", file: "audio/mass effect.mp3" },
+            98.5: { title: "Kappa Delta", file: "audio/spectrum.mp3" },
+            99.0: { title: "Kappa Epsilon", file: "audio/bang.mp3" },
+            99.5: { title: "Kappa Stigma", file: "audio/tangerine.mp3" },
+            100.0: { title: "Kappa Zeta", file: "audio/quantum touch.mp3" },
+            100.5: { title: "Kappa Eta", file: "audio/bliss.mp3" },
+            101.0: { title: "Kappa Theta", file: "audio/resounding.mp3" },
+            101.5: { title: "Lambda", file: "audio/oticons.mp3" },
+            102.0: { title: "Lambda Alpha", file: "audio/estrange.mp3" },
+            102.5: { title: "Lambda Beta", file: "audio/twin sparks.mp3" },
+            103.0: { title: "Lambda Gamma", file: "audio/pacis.mp3" },
+            103.5: { title: "Lambda Delta", file: "audio/chase.mp3" },
+            104.0: { title: "Lambda Epsilon", file: "audio/CrockV4.mp3" },
+            104.5: { title: "Lambda Stigma", file: "audio/grave.mp3" },
+            105.0: { title: "Lambda Zeta", file: "audio/stubborness.mp3" },
+            105.5: { title: "Lambda Eta", file: "audio/cinderella shoe.mp3" },
+            106.0: { title: "Lambda Theta", file: "audio/dynamite.mp3" },
+            106.5: { title: "Mu", file: "audio/equanimity.mp3" },
+            107.0: { title: "Mu Alpha", file: "audio/lucioles.mp3" },
+            107.5: { title: "Mu Beta", file: "audio/dancer.mp3" },
+            108.0: { title: "Mu Gamma", file: "audio/there.mp3" }
+        };
+
+        function loadAudioSource(url, isHls, title) {
+            if (hlsInstance) {
+                hlsInstance.destroy();
+                hlsInstance = null;
+            }
+
+            audioEl.pause();
+            audioEl.src = "";
+            audioEl.loop = !isHls;
+            updateMediaSession(title);
+            setupVisualizer();
+
+            if (isHls && url.endsWith('.m3u8')) {
+                if (Hls.isSupported()) {
+                    hlsInstance = new Hls();
+                    hlsInstance.loadSource(url);
+                    hlsInstance.attachMedia(audioEl);
+                    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+                        audioEl.play().catch(err => console.log("HLS autoplay locked:", err));
+                    });
+                } else if (audioEl.canPlayType('application/vnd.apple.mpegurl')) {
+                    audioEl.src = url;
+                    audioEl.load();
+                    audioEl.play().catch(err => console.log("Native HLS autoplay locked:", err));
+                }
+            } else {
+                audioEl.src = url;
+                audioEl.load();
+                audioEl.play().catch(err => console.log("Standard audio autoplay locked:", err));
+            }
+        }
+
+        function tuneToFrequency(rawVal) {
+            if (!tuningBar || !stationDisplay || !audioEl) return;
+            const percent = ((rawVal - minFreq) / (maxFreq - minFreq)) * 100;
+            tuningBar.style.left = `${percent}%`;
+
+            const keys = Object.keys(stations).map(Number);
+            let closestKey = keys.reduce((prev, curr) => Math.abs(curr - rawVal) < Math.abs(prev - rawVal) ? curr : prev);
+            let minDiff = Math.abs(rawVal - closestKey);
+
+            if (minDiff <= 0.25) {
+                if (activeLockedStation !== closestKey) {
+                    activeLockedStation = closestKey;
+                    let station = stations[closestKey];
+                    
+                    if (station.isLive) {
+                        stationDisplay.innerHTML = `[ LIVE LOCKED ] > CHANNEL: ${station.title} (${closestKey.toFixed(1)} MHz)`;
+                    } else {
+                        stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (${closestKey.toFixed(1)} MHz)`;
+                    }
+
+                    loadAudioSource(station.file, station.isLive, station.title);
+                }
+            } else {
+                if (activeLockedStation !== null) {
+                    activeLockedStation = null;
+                    if (hlsInstance) {
+                        hlsInstance.destroy();
+                        hlsInstance = null;
+                    }
+                    audioEl.loop = false;
+                    audioEl.pause();
+                    audioEl.src = "";
+                }
+                stationDisplay.innerHTML = `STATIC... [ FREQ: ${rawVal.toFixed(1)} MHz ]`;
+            }
+        }
+
+        if (tuner) {
+            tuner.addEventListener('input', (e) => {
+                tuneToFrequency(parseFloat(e.target.value));
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
             if (!tuner || !audioEl) return;
             
             tuner.value = defaultFrequency;
@@ -45,3 +315,4 @@ window.addEventListener('DOMContentLoaded', () => {
                 }, 40); 
             }, 1000);
         });
+    </script>
