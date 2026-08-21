@@ -7,8 +7,6 @@
     
     <!-- HLS.js Library for Universal Browser Support of .m3u8 Streams -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <!-- DASH.js Library for Universal Browser Support of .mpd Streams -->
-    <script src="https://cdn.jsdelivr.net/npm/dashjs@latest/dist/dash.all.min.js"></script>
 
     <style>
         body {
@@ -222,33 +220,7 @@
         .controls-panel {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-        }
-
-        .band-selector {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-        }
-
-        .band-btn {
-            background: #1a120e;
-            border: 2px solid #a68965;
-            color: #a68965;
-            padding: 6px 16px;
-            font-family: 'Courier New', Courier, monospace;
-            font-weight: bold;
-            font-size: 11px;
-            letter-spacing: 2px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .band-btn.active {
-            background: #a68965;
-            color: #0d0d0d;
-            box-shadow: 0 0 10px rgba(166, 137, 101, 0.5);
+            gap: 10px;
         }
 
         input[type=range] {
@@ -316,7 +288,7 @@
                 <div class="scale-row">
                     <span class="band-label" style="color: #ffaa33;">AM</span>
                     <div class="scale-numbers" style="color: #999;">
-                        <span>535</span><span>600</span><span>800</span><span>1000</span><span>1200</span><span>1400</span><span>1600</span><span>1705</span>
+                        <span>535</span><span>650</span><span>800</span><span>1000</span><span>1200</span><span>1400</span><span>1500</span><span>1605</span>
                     </div>
                     <span class="scale-unit" style="color: #ffaa33;">kHz</span>
                 </div>
@@ -339,12 +311,8 @@
         </div>
 
         <div class="controls-panel">
-            <div class="band-selector">
-                <button class="band-btn active" id="btnFM" onclick="switchBand('FM')">FM BAND</button>
-                <button class="band-btn" id="btnAM" onclick="switchBand('AM')">AM BAND</button>
-            </div>
             <input type="range" id="tuner" min="87.0" max="108.0" step="0.1" value="87.0">
-            <div class="helper-text" id="helperText">Frequency Slide Tuner (FM)</div>
+            <div class="helper-text">Frequency Slide Tuner</div>
         </div>
     </div>
 
@@ -356,9 +324,6 @@
         const tuningBar = document.getElementById('tuningBar');
         const stationDisplay = document.getElementById('stationDisplay');
         const audioEl = document.getElementById('mainAudio');
-        const helperText = document.getElementById('helperText');
-        const btnFM = document.getElementById('btnFM');
-        const btnAM = document.getElementById('btnAM');
 
         const canvas = document.getElementById('visualizerCanvas');
         const canvasCtx = canvas ? canvas.getContext('2d') : null;
@@ -367,7 +332,6 @@
         let analyser = null;
         let sourceNode = null;
         let hlsInstance = null;
-        let dashInstance = null;
 
         let particles = [];
         const numParticles = 40;
@@ -498,16 +462,18 @@
             }
         }
 
-        let currentBand = 'FM';
+        const minFreq = 87.0;
+        const maxFreq = 108.0;
+        const defaultFrequency = 87.0;
 
-        const fmStations = {
-            87.0: { title: "Lambda Alpha", file: "audio/estrange.mp3" },
-            87.5: { title: "ICI Première Ottawa / Gatineau", file: "https://rcavliveaudio.akamaized.net/hls/live/2006986/M-7OOTT0_OTT/master.m3u8", isLive: true },
-            88.0: { title: "Iota", file: "audio/slow think.mp3" },
-            88.5: { title: "Iota Zeta", file: "audio/push.mp3" },
-            89.0: { title: "Kappa Delta", file: "audio/spectrum.mp3" },
-            89.5: { title: "Lambda Gamma", file: "audio/pacis.mp3" },
-            90.0: { title: "FIP - Eclectic / Underground (Paris)", file: "https://stream.radiofrance.fr/fip/fip_hifi.m3u8", isLive: true },
+        const stations = {
+            87.0: { title: "ICI Première Ottawa / Gatineau", file: "https://rcavliveaudio.akamaized.net/hls/live/2006986/M-7OOTT0_OTT/master.m3u8", isLive: true },
+            87.5: { title: "Iota", file: "audio/slow think.mp3" },
+            88.0: { title: "Iota Zeta", file: "audio/push.mp3" },
+            88.5: { title: "Kappa Delta", file: "audio/spectrum.mp3" },
+            89.0: { title: "Lambda Gamma", file: "audio/pacis.mp3" },
+            89.5: { title: "FIP - Eclectic / Underground (Paris)", file: "https://stream.radiofrance.fr/fip/fip_hifi.m3u8", isLive: true },
+            90.0: { title: "Lambda Alpha", file: "audio/estrange.mp3" },
             90.5: { title: "Lambda Theta", file: "audio/dynamite.mp3" },
             91.0: { title: "Kappa", file: "audio/eveille.mp3" },
             91.5: { title: "Kappa Alpha", file: "audio/esprit itinerant.mp3" },
@@ -521,73 +487,40 @@
             95.5: { title: "Iota Gamma", file: "audio/understanding.mp3" },
             96.0: { title: "Mu Alpha", file: "audio/lucioles.mp3" },
             96.5: { title: "ICI Musique Classique", file: "https://rcavliveaudio.akamaized.net/hls/live/2007000/MUSE/master.m3u8", isLive: true },
-            97.0: { title: "Lambda Zeta", file: "audio/stubborness.mp3" }
+            97.0: { title: "Lambda Zeta", file: "audio/stubborness.mp3" },
+            97.5: { title: "Lambda Delta", file: "audio/chase.mp3" },
+            98.0: { title: "Kappa Beta", file: "audio/the daunting.mp3" },
+            98.5: { title: "Iota Eta", file: "audio/recalcitrant.mp3" },
+            99.0: { title: "Kappa Epsilon", file: "audio/bang.mp3" },
+            99.5: { title: "ICI Première Montréal (95.1 FM)", file: "https://rcavliveaudio.akamaized.net/hls/live/2006635/P-2QMTL0_MTL/master.m3u8", isLive: true },
+            100.0: { title: "Iota Beta", file: "audio/ubiquity.mp3" },
+            100.5: { title: "Lambda Stigma", file: "audio/grave.mp3" },
+            101.0: { title: "Lambda Eta", file: "audio/cinderella shoe.mp3" },
+            101.5: { title: "Kappa Gamma", file: "audio/mass effect.mp3" },
+            102.0: { title: "Iota Stigma", file: "audio/melancoly in flat.mp3" },
+            102.5: { title: "Mu Beta", file: "audio/dancer.mp3" },
+            103.0: { title: "Mu Gamma", file: "audio/there.mp3" },
+            103.5: { title: "Iota", file: "audio/slow think.mp3" },
+            104.0: { title: "Kappa Delta", file: "audio/spectrum.mp3" },
+            104.5: { title: "Lambda Theta", file: "audio/dynamite.mp3" },
+            105.0: { title: "Iota Zeta", file: "audio/push.mp3" },
+            105.5: { title: "Lambda Gamma", file: "audio/pacis.mp3" },
+            106.0: { title: "Lambda Alpha", file: "audio/estrange.mp3" },
+            106.5: { title: "Kappa", file: "audio/eveille.mp3" },
+            107.0: { title: "Kappa Alpha", file: "audio/esprit itinerant.mp3" },
+            107.5: { title: "Mu", file: "audio/equanimity.mp3" },
+            108.0: { title: "Lambda", file: "audio/oticons.mp3" }
         };
 
-        const amStations = {
-            535: { title: "Lambda Delta", file: "audio/chase.mp3" },
-            600: { title: "Kappa Beta", file: "audio/the daunting.mp3" },
-            670: { title: "Iota Eta", file: "audio/recalcitrant.mp3" },
-            740: { title: "Kappa Epsilon", file: "audio/bang.mp3" },
-            810: { title: "ICI Première Montréal (95.1 FM)", file: "https://rcavliveaudio.akamaized.net/hls/live/2006635/P-2QMTL0_MTL/master.m3u8", isLive: true },
-            880: { title: "Iota Beta", file: "audio/ubiquity.mp3" },
-            950: { title: "Lambda Stigma", file: "audio/grave.mp3" },
-            1020: { title: "Lambda Eta", file: "audio/cinderella shoe.mp3" },
-            1090: { title: "Kappa Gamma", file: "audio/mass effect.mp3" },
-            1160: { title: "Iota Stigma", file: "audio/melancoly in flat.mp3" },
-            1230: { title: "Mu Beta", file: "audio/dancer.mp3" },
-            1300: { title: "Mu Gamma", file: "audio/there.mp3" },
-            1370: { title: "Iota", file: "audio/slow think.mp3" },
-            1430: { title: "Kappa Delta", file: "audio/spectrum.mp3" },
-            1490: { title: "Lambda Theta", file: "audio/dynamite.mp3" },
-            1550: { title: "Iota Zeta", file: "audio/push.mp3" },
-            1610: { title: "Lambda Gamma", file: "audio/pacis.mp3" },
-            1650: { title: "Lambda Alpha", file: "audio/estrange.mp3" },
-            1675: { title: "Kappa", file: "audio/eveille.mp3" },
-            1690: { title: "Kappa Alpha", file: "audio/esprit itinerant.mp3" },
-            1705: { title: "Mu", file: "audio/equanimity.mp3" }
-        };
-
-        function switchBand(band) {
-            currentBand = band;
-            if (band === 'FM') {
-                btnFM.classList.add('active');
-                btnAM.classList.remove('active');
-                tuner.min = "87.0";
-                tuner.max = "108.0";
-                tuner.step = "0.1";
-                tuner.value = "87.0";
-                helperText.innerHTML = "Frequency Slide Tuner (FM)";
-                tuneToFrequency(87.0);
-            } else {
-                btnAM.classList.add('active');
-                btnFM.classList.remove('active');
-                tuner.min = "535";
-                tuner.max = "1705";
-                tuner.step = "5";
-                tuner.value = "535";
-                helperText.innerHTML = "Frequency Slide Tuner (AM)";
-                tuneToFrequency(535);
-            }
-        }
-
-        function cleanStreamHandlers() {
+        function loadAudioSource(url, isHls, title) {
             if (hlsInstance) {
                 hlsInstance.destroy();
                 hlsInstance = null;
             }
-            if (dashInstance) {
-                dashInstance.reset();
-                dashInstance = null;
-            }
-            audioEl.pause();
-            audioEl.removeAttribute('src');
-            audioEl.load();
-        }
 
-        function loadAudioSource(url, isHls, isDash, title) {
-            cleanStreamHandlers();
-            audioEl.loop = !(isHls || isDash);
+            audioEl.pause();
+            audioEl.src = "";
+            audioEl.loop = !isHls;
             updateMediaSession(title);
             setupVisualizer();
 
@@ -604,13 +537,6 @@
                     audioEl.load();
                     audioEl.play().catch(err => console.log("Native HLS autoplay locked:", err));
                 }
-            } else if (isDash || url.endsWith('.mpd')) {
-                if (typeof dashjs !== 'undefined') {
-                    dashInstance = dashjs.MediaPlayer().create();
-                    dashInstance.initialize(audioEl, url, true);
-                } else {
-                    console.error("dash.js library required for MPEG-DASH streams.");
-                }
             } else {
                 audioEl.src = url;
                 audioEl.load();
@@ -620,42 +546,32 @@
 
         function tuneToFrequency(rawVal) {
             if (!tuningBar || !stationDisplay || !audioEl) return;
-            const minFreq = parseFloat(tuner.min);
-            const maxFreq = parseFloat(tuner.max);
             const percent = ((rawVal - minFreq) / (maxFreq - minFreq)) * 100;
             tuningBar.style.left = `${percent}%`;
 
-            const activeStations = currentBand === 'FM' ? fmStations : amStations;
-            const keys = Object.keys(activeStations).map(Number);
-            const unitLabel = currentBand === 'FM' ? 'MHz' : 'kHz';
-            let displayVal = currentBand === 'FM' ? rawVal.toFixed(1) : Math.round(rawVal);
-
-            if (keys.length === 0) {
-                cleanStreamHandlers();
-                stationDisplay.innerHTML = `STATIC... [ FREQ: ${displayVal} ${unitLabel} ]`;
-                return;
-            }
-
+            const keys = Object.keys(stations).map(Number);
             let closestKey = keys.reduce((prev, curr) => Math.abs(curr - rawVal) < Math.abs(prev - rawVal) ? curr : prev);
             let minDiff = Math.abs(rawVal - closestKey);
-            const threshold = currentBand === 'FM' ? 0.25 : 35;
 
-            if (minDiff <= threshold) {
-                let station = activeStations[closestKey];
-                displayVal = currentBand === 'FM' ? closestKey.toFixed(1) : Math.round(closestKey);
+            if (minDiff <= 0.25) {
+                let station = stations[closestKey];
                 
                 if (station.isLive) {
-                    stationDisplay.innerHTML = `[ LIVE LOCKED ] > CHANNEL: ${station.title} (${displayVal} ${unitLabel})`;
+                    stationDisplay.innerHTML = `[ LIVE LOCKED ] > CHANNEL: ${station.title} (${closestKey.toFixed(1)} MHz)`;
                 } else {
-                    stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (${displayVal} ${unitLabel})`;
+                    stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (${closestKey.toFixed(1)} MHz)`;
                 }
 
-                const isHls = station.file.endsWith('.m3u8');
-                const isDash = station.format === 'dash' || station.file.endsWith('.mpd');
-                loadAudioSource(station.file, isHls, isDash, station.title);
+                loadAudioSource(station.file, station.isLive, station.title);
             } else {
-                cleanStreamHandlers();
-                stationDisplay.innerHTML = `[ STATIC ] > FREQ: ${displayVal} ${unitLabel}`;
+                if (hlsInstance) {
+                    hlsInstance.destroy();
+                    hlsInstance = null;
+                }
+                stationDisplay.innerHTML = `STATIC... [ FREQ: ${rawVal.toFixed(1)} MHz ]`;
+                audioEl.loop = false;
+                audioEl.pause();
+                audioEl.src = "";
             }
         }
 
@@ -667,13 +583,17 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             if (!tuner || !audioEl) return;
-            tuner.value = "87.0";
+            tuner.value = defaultFrequency;
             
-            let station = fmStations[87.0];
+            let station = stations[defaultFrequency];
             if (tuningBar) tuningBar.style.left = '0%';
-            stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (87.0 MHz)`;
+            if (station.isLive) {
+                stationDisplay.innerHTML = `[ LIVE LOCKED ] > CHANNEL: ${station.title} (${defaultFrequency.toFixed(1)} MHz)`;
+            } else {
+                stationDisplay.innerHTML = `[ LOCKED ] > TRANSMISSION: ${station.title} (${defaultFrequency.toFixed(1)} MHz)`;
+            }
             
-            loadAudioSource(station.file, false, false, station.title);
+            loadAudioSource(station.file, station.isLive, station.title);
             
             audioEl.play().catch(() => {
                 const unlockOnGesture = () => {
@@ -685,7 +605,7 @@
                 };
                 window.addEventListener('click', unlockOnGesture);
                 window.addEventListener('keydown', unlockOnGesture);
-                window.removeEventListener('touchstart', unlockOnGesture);
+                window.addEventListener('touchstart', unlockOnGesture);
             });
         });
     </script>
