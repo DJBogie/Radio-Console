@@ -316,7 +316,7 @@
                 <div class="scale-row">
                     <span class="band-label" style="color: #ffaa33;">AM</span>
                     <div class="scale-numbers" style="color: #999;">
-                        <span>535</span><span>680</span><span>770</span><span>880</span><span>1010</span><span>1100</span><span>1300</span><span>1440</span><span>1605</span>
+                        <span>580</span><span>680</span><span>711</span><span>740</span><span>770</span><span>870</span><span>880</span><span>1010</span><span>1035</span><span>1100</span><span>1107</span><span>1200</span><span>1440</span><span>1530</span>
                     </div>
                     <span class="scale-unit" style="color: #ffaa33;">kHz</span>
                 </div>
@@ -547,6 +547,7 @@
         };
 
         const amStations = {
+            580: { title: "CFRA 580 News Talk (Ottawa, ON)", file: "http://18063.live.streamtheworld.com/CFRAAM.aac", isLive: true },
             680: { title: "NewsRadio 680 CFTR (Toronto, ON)", file: "https://rogers-hls.leanstream.co/rogers/tor680.stream/playlist.m3u8", isLive: true },
             711: { title: "RCF Le Semeur (Paris, France)", file: "https://rcf.ice.infomaniak.ch/rcf75-128.mp3", isLive: true },
             740: { title: "Zoomer Radio CFZM (Toronto, ON)", file: "http://zoomer2.hc1.ca:8015/", isLive: true },
@@ -557,6 +558,7 @@
             1035: { title: "Tartu Postimees Raadio (Tartu, Estonia)", file: "https://icecast.postimees.ee/tarturaadio.mp3", isLive: true },
             1100: { title: "WTAM Newsradio (Cleveland, OH)", file: "https://ice2.securenetsystems.net/WTAM", isLive: true },
             1107: { title: "RNE Radio 5 (Madrid, Spain)", file: "https://rtve-icelab.rtve.es/rtve/radio5_main.m3u8", isLive: true },
+            1200: { title: "TSN 1200 Sports Radio (Ottawa, ON)", file: "http://18063.live.streamtheworld.com/CFGOAM.aac", isLive: true },
             1440: { title: "Super Gold (London, UK)", file: "https://stream-mz.planetradio.co.uk/supergold.mp3", isLive: true },
             1530: { title: "WCKY The Homer (Cincinnati, OH)", file: "https://live.amperwave.net/manifest/iheart-wckyamaac-llhlsc.m3u8", isLive: true }
         };
@@ -575,12 +577,12 @@
             } else {
                 btnAM.classList.add('active');
                 btnFM.classList.remove('active');
-                tuner.min = "535";
-                tuner.max = "1605";
+                tuner.min = "580";
+                tuner.max = "1530";
                 tuner.step = "1";
-                tuner.value = "535";
+                tuner.value = "580";
                 helperText.innerHTML = "Frequency Slide Tuner (AM)";
-                tuneToFrequency(535);
+                tuneToFrequency(580);
             }
         }
 
